@@ -1,0 +1,8 @@
+*.o
+/run_test
+/libopentac.so
+*.yy.c
+*.tab.c
+*~
+.#*
+#*#

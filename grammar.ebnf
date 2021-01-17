@@ -1,0 +1,58 @@
+root = { attr item } ;
+attr stmt = { attribute } item ;
+attribute = "#" , ident ;
+item = declaration
+     | function ;
+declaration = ident , ":" type ;
+function = ident , "::" argslist , "=>" , "{" , { stmt } , "} ;
+
+type = "i8" | "i16" | "i32" | "i64"
+     | "u8" | "u16" | "u32" | "u64"
+     | "f32" | "f64"
+     | "bool"
+     | "unit" | "never"
+     | "^" , type
+     | "tuple" , typelist
+     | "struct" , ident
+     | "union" , ident
+     | "[" , type , "," , ?int? "]"
+     | typelist , "->" , type ;
+typelist = "(" , type , { "," , type } , [ "," ] , ")" ;
+
+argslist = "(" , { arg , "," } , [ arg ] , ")" ;
+arg = ident , ":" , type ; 
+
+stmt = ident , ":=" , binary , value , "," , value
+     | ident , ":=" , unary , value 
+     | ident , "[" , value , "]" , ":=" , value 
+     | ident , ":=" , value , "[" , value , "]"
+     | "param" , value 
+     | "return" , value
+     | "if" , binary , value , "," , value , "branch" , value
+     | "branch" , value ;
+
+value = ?ident? | ?int? | ?real? | "true" | "false" ;
+
+binary = "add"
+       | "sub"
+       | "mul"
+       | "div"
+       | "mod"
+       | "bitand"
+       | "bitxor"
+       | "bitor"
+       | "shl"
+       | "shr"
+       | "rol"
+       | "ror"
+       | "eq"
+       | "ne"
+       | "lt"
+       | "le"
+       | "gt"
+       | "ge"
+       | "call" ;
+unary = "neg"
+      | "not" 
+      | "ref"
+      | "deref" ;
