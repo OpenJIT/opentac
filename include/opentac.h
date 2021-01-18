@@ -28,6 +28,8 @@ typedef struct OpentacOpcode OpentacOpcode;
 typedef struct OpentacValue OpentacValue;
 typedef union OpentacVal OpentacVal;
 typedef struct OpentacString OpentacString;
+typedef struct OpentacTypeInfo OpentacTypeInfo;
+typedef struct OpentacRegalloc OpentacRegalloc;
 typedef int32_t OpentacRegister;
 typedef uint32_t OpentacLabel;
 
@@ -258,12 +260,94 @@ struct OpentacString {
     char data[];
 };
 
+struct OpentacTypeInfo {
+    size_t size;
+    size_t align;
+};
+
+enum {
+    OPENTAC_REG_ALLOCATED,
+    OPENTAC_REG_SPILLED,
+};
+
+// machine register
+struct OpentacMReg {
+    const char *name;
+};
+
+struct OpentacPurpose {
+    int tag;
+    union {
+        struct OpentacMReg reg;
+        uint64_t stack;
+    };
+};
+
+struct OpentacRegEntry {
+    OpentacString *key;
+    struct OpentacPurpose purpose;
+};
+
+struct OpentacRegisterTable {
+    size_t len;
+    size_t cap;
+    struct OpentacRegEntry *entries;
+};
+
+typedef uint64_t OpentacLifetime;
+
+struct OpentacInterval {
+    int stack;
+    const char *name;
+    OpentacTypeInfo ti;
+    struct OpentacPurpose purpose;
+    OpentacLifetime start;
+    OpentacLifetime end;
+};
+
+struct OpentacPool {
+    size_t len;
+    size_t cap;
+    struct OpentacMReg *registers;
+};
+
+struct OpentacIntervals {
+    size_t len;
+    size_t cap;
+    struct OpentacInterval *intervals;
+};
+
+struct OpentacActive {
+    size_t index;
+    struct OpentacMReg reg;
+};
+
+struct OpentacActives {
+    size_t len;
+    size_t cap;
+    struct OpentacActive *actives;
+};
+
+struct OpentacRegalloc {
+    struct OpentacPool registers;
+    struct OpentacIntervals live;
+    struct OpentacIntervals stack;
+    struct OpentacActives active;
+    uint64_t offset;
+};
+
 OpentacBuilder *opentac_parse(FILE *file);
 
 void opentac_builder(OpentacBuilder *builder);
 void opentac_builder_with_cap(OpentacBuilder *builder, size_t cap);
 OpentacBuilder *opentac_builderp();
 OpentacBuilder *opentac_builderp_with_cap(size_t cap);
+
+void opentac_alloc_linscan(struct OpentacRegalloc *alloc, size_t len, const char **registers);
+void opentac_alloc_add(struct OpentacRegalloc *alloc, struct OpentacInterval *interval);
+void opentac_alloc_allocate(struct OpentacRegalloc *alloc);
+void opentac_alloc_find(struct OpentacRegalloc *alloc, OpentacBuilder *builder);
+void opentac_alloc_regtable(struct OpentacRegisterTable *dest, struct OpentacRegalloc *alloc);
 
 void opentac_build_decl(OpentacBuilder *builder, OpentacString *name, OpentacType *type);
 void opentac_build_function(OpentacBuilder *builder, OpentacString *name);

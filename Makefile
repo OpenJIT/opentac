@@ -6,8 +6,8 @@ BIN:=libopentac.so
 TEST:=run_test
 
 TESTSRC:=test.c
-SRC:=lib.c grammar.tab.c lex.yy.c
-OBJ:=lib.o grammar.tab.o lex.yy.o
+SRC:=lib.c regalloc.c grammar.tab.c lex.yy.c
+OBJ:=lib.o regalloc.o grammar.tab.o lex.yy.o
 INC:=$(INCDIR)/opentac.h grammar.tab.h
 
 CFLAGS:=-g -ggdb -Wall -Wextra -pedantic -std=c11 -Wno-unused-function -D_GNU_SOURCE=1 -fPIC
@@ -24,7 +24,7 @@ test: $(TEST)
 	LD_LIBRARY_PATH=. ./$(TEST) ./examples/sanity.tac
 
 $(TEST): $(TESTSRC) $(BIN)
-	$(CC) -o $@ $(TESTSRC) $(LDFLAGS) -L. -lopentac
+	$(CC) -o $@ $(CFLAGS) $(TESTSRC) $(LDFLAGS) -L. -lopentac
 
 $(BIN): $(OBJ) $(INC)
 	$(CC) -shared -o $(BIN) $(OBJ) $(LDFLAGS)

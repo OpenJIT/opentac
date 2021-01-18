@@ -16,8 +16,31 @@ int main(int argc, const char **argv) {
         }
     }
 
-    OpentacBuilder *result = opentac_parse(input);
+    OpentacBuilder *builder = opentac_parse(input);
     fclose(input);
 
-    return result == NULL;
+    const char *registers[] = {
+        "rax",
+        "rcx",
+        "rdx",
+        "rbx",
+    };
+    OpentacRegalloc alloc;
+    opentac_alloc_linscan(&alloc, 4, registers);
+    opentac_alloc_find(&alloc, builder);
+    opentac_alloc_allocate(&alloc);
+    struct OpentacRegisterTable table;
+    opentac_alloc_regtable(&table, &alloc);
+
+    for (size_t i = 0; i < table.len; i++) {
+        printf("%s: ", table.entries[i].key->data);
+        if (table.entries[i].purpose.tag == OPENTAC_REG_SPILLED) {
+            printf("[%04lx]", table.entries[i].purpose.stack);
+        } else if (table.entries[i].purpose.tag == OPENTAC_REG_ALLOCATED) {
+            printf("%s", table.entries[i].purpose.reg.name);
+        }
+        printf("\n");
+    }
+
+    return 0;
 }

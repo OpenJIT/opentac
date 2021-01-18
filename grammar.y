@@ -5,6 +5,7 @@
 int yylex(void);
 void yyerror(char const *);
 
+OpentacBuilder *opentac_b = NULL;
 OpentacString *yystrval = NULL;
 unsigned int yyopval;
 int64_t yyival = 0;
@@ -105,12 +106,14 @@ item:
 
 declaration:
                 declname SYM_COLON type SYM_SEMICOLON {
-                    opentac_build_decl(&yylval, yydeclname, yytval);
+                    opentac_build_decl(opentac_b, yydeclname, yytval);
                   }
         ;
 
 function:
-                fndef SYM_DARROW SYM_CURLYL stmts SYM_CURLYR
+                fndef SYM_DARROW SYM_CURLYL stmts SYM_CURLYR {
+                    opentac_finish_function(opentac_b);
+                  }
         ;
 
 fndef:
@@ -123,7 +126,7 @@ declname:
 
 fndefname:
                 IDENT {
-                    opentac_build_function(&yylval, yystrval);
+                    opentac_build_function(opentac_b, yystrval);
                   }
         ;
 
@@ -140,7 +143,7 @@ paramslist_inner:
 
 arg:
                 argname SYM_COLON type {
-                    opentac_build_function_param(&yylval, yyargname, yytval);
+                    opentac_build_function_param(opentac_b, yyargname, yytval);
                   }
         ;
 
@@ -149,32 +152,32 @@ argname:
         ;
 
 type:
-                KW_I8 { yytval = opentac_type_i8(&yylval); }
-        |       KW_I16 { yytval = opentac_type_i16(&yylval); }
-        |       KW_I32 { yytval = opentac_type_i32(&yylval); }
-        |       KW_I64 { yytval = opentac_type_i64(&yylval); }
-        |       KW_U8 { yytval = opentac_type_ui8(&yylval); }
-        |       KW_U16 { yytval = opentac_type_ui16(&yylval); }
-        |       KW_U32 { yytval = opentac_type_ui32(&yylval); }
-        |       KW_U64 { yytval = opentac_type_ui64(&yylval); }
-        |       KW_F32 { yytval = opentac_type_f32(&yylval); }
-        |       KW_F64 { yytval = opentac_type_f64(&yylval); }
-        |       KW_BOOL { yytval = opentac_type_bool(&yylval); }
-        |       KW_UNIT { yytval = opentac_type_unit(&yylval); }
-        |       KW_NEVER { yytval = opentac_type_never(&yylval); }
-        |       SYM_CARET type { yytval = opentac_type_ptr(&yylval, yytval); }
-        |       KW_TUPLE typelist1 { yytval = opentac_type_tuple(&yylval, yytplen, yytpval); }
+                KW_I8 { yytval = opentac_type_i8(opentac_b); }
+        |       KW_I16 { yytval = opentac_type_i16(opentac_b); }
+        |       KW_I32 { yytval = opentac_type_i32(opentac_b); }
+        |       KW_I64 { yytval = opentac_type_i64(opentac_b); }
+        |       KW_U8 { yytval = opentac_type_ui8(opentac_b); }
+        |       KW_U16 { yytval = opentac_type_ui16(opentac_b); }
+        |       KW_U32 { yytval = opentac_type_ui32(opentac_b); }
+        |       KW_U64 { yytval = opentac_type_ui64(opentac_b); }
+        |       KW_F32 { yytval = opentac_type_f32(opentac_b); }
+        |       KW_F64 { yytval = opentac_type_f64(opentac_b); }
+        |       KW_BOOL { yytval = opentac_type_bool(opentac_b); }
+        |       KW_UNIT { yytval = opentac_type_unit(opentac_b); }
+        |       KW_NEVER { yytval = opentac_type_never(opentac_b); }
+        |       SYM_CARET type { yytval = opentac_type_ptr(opentac_b, yytval); }
+        |       KW_TUPLE typelist1 { yytval = opentac_type_tuple(opentac_b, yytplen, yytpval); }
         |       KW_STRUCT IDENT {
-                    yytval = opentac_type_named(&yylval, OPENTAC_TYPE_STRUCT, yystrval);
+                    yytval = opentac_type_named(opentac_b, OPENTAC_TYPE_STRUCT, yystrval);
                   }
         |       KW_UNION IDENT {
-                    yytval = opentac_type_named(&yylval, OPENTAC_TYPE_UNION, yystrval);
+                    yytval = opentac_type_named(opentac_b, OPENTAC_TYPE_UNION, yystrval);
                   }
         |       SYM_SQUAREL type SYM_COMMA INTEGER SYM_SQUARER {
-                    yytval = opentac_type_array(&yylval, yytval, yyival);
+                    yytval = opentac_type_array(opentac_b, yytval, yyival);
                   }
         |       typelist0 SYM_SARROW type {
-                    yytval = opentac_type_fn(&yylval, yytplen, yytpval, yytval);
+                    yytval = opentac_type_fn(opentac_b, yytplen, yytpval, yytval);
                   }
         ;
 
@@ -215,42 +218,42 @@ stmts:
 
 stmt:
                 reg SYM_LET binary value SYM_COMMA value SYM_SEMICOLON {
-                    OpentacValue target = opentac_build_binary(&yylval, yyopval, yyvals[0], yyvals[1]);
-                    opentac_fn_bind_int(&yylval, yyregval, target.val.regval);
+                    OpentacValue target = opentac_build_binary(opentac_b, yyopval, yyvals[0], yyvals[1]);
+                    opentac_fn_bind_int(opentac_b, yyregval, target.val.regval);
                     yyvalc = 0;
                   }
         |       reg SYM_LET unary value SYM_SEMICOLON {
-                    OpentacValue target = opentac_build_unary(&yylval, yyopval, yyvals[0]);
-                    opentac_fn_bind_int(&yylval, yyregval, target.val.regval);
+                    OpentacValue target = opentac_build_unary(opentac_b, yyopval, yyvals[0]);
+                    opentac_fn_bind_int(opentac_b, yyregval, target.val.regval);
                     yyvalc = 0;
                   }
         |       reg SYM_SQUAREL value SYM_SQUARER SYM_LET value SYM_SEMICOLON {
-                    OpentacRegister reg = opentac_fn_get_int(&yylval, yyregval);
+                    OpentacRegister reg = opentac_fn_get_int(opentac_b, yyregval);
                     opentac_del_string(yyregval);
-                    opentac_build_index_assign(&yylval, reg, yyvals[0], yyvals[1]);
+                    opentac_build_index_assign(opentac_b, reg, yyvals[0], yyvals[1]);
                     yyvalc = 0;
                   }
         |       reg SYM_LET value SYM_SQUAREL value SYM_SQUARER SYM_SEMICOLON {
-                    OpentacValue target = opentac_build_assign_index(&yylval, yyvals[0], yyvals[1]);
-                    opentac_fn_bind_int(&yylval, yyregval, target.val.regval);
+                    OpentacValue target = opentac_build_assign_index(opentac_b, yyvals[0], yyvals[1]);
+                    opentac_fn_bind_int(opentac_b, yyregval, target.val.regval);
                     yyvalc = 0;
                   }
         |       KW_PARAM value SYM_SEMICOLON {
-                    opentac_build_param(&yylval, yyvals[0]);
+                    opentac_build_param(opentac_b, yyvals[0]);
                     yyvalc = 0;
                   }
         |       KW_RETURN value SYM_SEMICOLON {
-                    opentac_build_return(&yylval, yyvals[0]);
+                    opentac_build_return(opentac_b, yyvals[0]);
                     yyvalc = 0;
                   }
         |       KW_IF binary value SYM_COMMA value KW_BRANCH label SYM_SEMICOLON {
-                    OpentacLabel label = opentac_fn_get_int(&yylval, yylblval);
+                    OpentacLabel label = opentac_fn_get_int(opentac_b, yylblval);
                     opentac_del_string(yyregval);
-                    opentac_build_if_branch(&yylval, yyopval, yyvals[0], yyvals[1], label);
+                    opentac_build_if_branch(opentac_b, yyopval, yyvals[0], yyvals[1], label);
                     yyvalc = 0;
                   }
         |       KW_BRANCH value SYM_SEMICOLON {
-                    opentac_build_branch(&yylval, yyvals[0]);
+                    opentac_build_branch(opentac_b, yyvals[0]);
                     yyvalc = 0;
                   }
         ;

@@ -2,6 +2,7 @@
 #include "grammar.tab.h"
 
 extern FILE *yyin;
+extern OpentacBuilder *opentac_b;
 
 #define DEFAULT_BUILDER_CAP ((size_t) 32)
 #define DEFAULT_FN_CAP ((size_t) 32)
@@ -12,13 +13,11 @@ OpentacBuilder *opentac_parse(FILE *file) {
     opentac_assert(file);
     
     yyin = file;
-    opentac_builder(&yylval);
+    opentac_b = opentac_builderp();
     if (yyparse()) {
         return NULL;
     }
-    OpentacBuilder *builder = malloc(sizeof(OpentacBuilder));
-    memcpy(builder, &yylval, sizeof(OpentacBuilder));
-    return builder;
+    return opentac_b;
 }
 
 void opentac_builder(OpentacBuilder *builder) {
@@ -108,6 +107,7 @@ void opentac_build_decl(OpentacBuilder *builder, OpentacString *name, OpentacTyp
     item->decl.type = type;
     *builder->current = item;
     ++builder->current;
+    ++builder->len;
 }
 
 void opentac_build_function(OpentacBuilder *builder, OpentacString *name) {
@@ -146,6 +146,7 @@ void opentac_finish_function(OpentacBuilder *builder) {
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
     ++builder->current;
+    ++builder->len;
 }
 
 void opentac_build_function_param(OpentacBuilder *builder, OpentacString *name, OpentacType *type) {
@@ -200,6 +201,8 @@ OpentacValue opentac_build_binary(OpentacBuilder *builder, int opcode, OpentacVa
     fn->current->left = left.val;
     fn->current->right = right.val;
     fn->current->target = target;
+    ++fn->len;
+    ++fn->current;
 
     OpentacValue result;
     result.tag = OPENTAC_VAL_REG;
@@ -223,6 +226,8 @@ OpentacValue opentac_build_unary(OpentacBuilder *builder, int opcode, OpentacVal
     fn->current->tag.left = value.tag;
     fn->current->left = value.val;
     fn->current->target = target;
+    ++fn->len;
+    ++fn->current;
 
     OpentacValue result;
     result.tag = OPENTAC_VAL_REG;
@@ -246,6 +251,8 @@ void opentac_build_index_assign(OpentacBuilder *builder, OpentacRegister target,
     fn->current->left = offset.val;
     fn->current->right = value.val;
     fn->current->target = target;
+    ++fn->len;
+    ++fn->current;
 }
 
 OpentacValue opentac_build_assign_index(OpentacBuilder *builder, OpentacValue value, OpentacValue offset) {
@@ -265,6 +272,8 @@ OpentacValue opentac_build_assign_index(OpentacBuilder *builder, OpentacValue va
     fn->current->left = value.val;
     fn->current->right = offset.val;
     fn->current->target = target;
+    ++fn->len;
+    ++fn->current;
 
     OpentacValue result;
     result.tag = OPENTAC_VAL_REG;
@@ -285,6 +294,8 @@ void opentac_build_param(OpentacBuilder *builder, OpentacValue value) {
     fn->current->tag.opcode = OPENTAC_OP_PARAM;
     fn->current->tag.left = value.tag;
     fn->current->left = value.val;
+    ++fn->len;
+    ++fn->current;
 }
 
 OpentacValue opentac_build_call(OpentacBuilder *builder, OpentacValue func, uint64_t nparams) {
@@ -304,6 +315,8 @@ OpentacValue opentac_build_call(OpentacBuilder *builder, OpentacValue func, uint
     fn->current->left = func.val;
     fn->current->right.ui64val = nparams;
     fn->current->target = target;
+    ++fn->len;
+    ++fn->current;
 
     OpentacValue result;
     result.tag = OPENTAC_VAL_REG;
@@ -324,6 +337,8 @@ void opentac_build_return(OpentacBuilder *builder, OpentacValue value) {
     fn->current->tag.opcode = OPENTAC_OP_RETURN;
     fn->current->tag.left = value.tag;
     fn->current->left = value.val;
+    ++fn->len;
+    ++fn->current;
 }
 
 void opentac_build_if_branch(OpentacBuilder *builder, int relop, OpentacValue left, OpentacValue right, OpentacLabel label) {
@@ -342,6 +357,8 @@ void opentac_build_if_branch(OpentacBuilder *builder, int relop, OpentacValue le
     fn->current->left = left.val;
     fn->current->right = right.val;
     fn->current->label = label;
+    ++fn->len;
+    ++fn->current;
 }
 
 void opentac_build_branch(OpentacBuilder *builder, OpentacValue value) {
@@ -356,6 +373,8 @@ void opentac_build_branch(OpentacBuilder *builder, OpentacValue value) {
     fn->current->tag.opcode = OPENTAC_OP_BRANCH | OPENTAC_OP_NOP;
     fn->current->tag.left = value.tag;
     fn->current->left = value.val;
+    ++fn->len;
+    ++fn->current;
 }
 
 void opentac_fn_insert(OpentacBuilder *builder, size_t index) {
