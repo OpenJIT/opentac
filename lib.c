@@ -149,6 +149,14 @@ void opentac_finish_function(OpentacBuilder *builder) {
     ++builder->len;
 }
 
+OpentacItem *opentac_item_ptr(OpentacBuilder *builder) {
+    return *builder->current;
+}
+
+void opentac_set_item(OpentacBuilder *builder, OpentacItem *item) {
+    *builder->current = item;
+}
+
 void opentac_build_function_param(OpentacBuilder *builder, OpentacString *name, OpentacType *type) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);

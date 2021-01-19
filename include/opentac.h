@@ -353,6 +353,8 @@ void opentac_build_decl(OpentacBuilder *builder, OpentacString *name, OpentacTyp
 void opentac_build_function(OpentacBuilder *builder, OpentacString *name);
 void opentac_build_function_param(OpentacBuilder *builder, OpentacString *name, OpentacType *type);
 void opentac_finish_function(OpentacBuilder *builder);
+OpentacItem *opentac_item_ptr(OpentacBuilder *builder);
+void opentac_set_item(OpentacBuilder *builder, OpentacItem *item);
 void opentac_builder_insert(OpentacBuilder *builder, size_t index);
 void opentac_builder_goto(OpentacBuilder *builder, size_t index);
 void opentac_builder_goto_end(OpentacBuilder *builder);
