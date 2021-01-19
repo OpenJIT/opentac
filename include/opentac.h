@@ -357,6 +357,7 @@ void opentac_builder_insert(OpentacBuilder *builder, size_t index);
 void opentac_builder_goto(OpentacBuilder *builder, size_t index);
 void opentac_builder_goto_end(OpentacBuilder *builder);
 
+OpentacStmt *opentac_stmt_ptr(OpentacBuilder *builder);
 OpentacValue opentac_build_binary(OpentacBuilder *builder, int opcode, OpentacValue left, OpentacValue right);
 OpentacValue opentac_build_unary(OpentacBuilder *builder, int opcode, OpentacValue value);
 void opentac_build_index_assign(OpentacBuilder *builder, OpentacRegister target, OpentacValue offset, OpentacValue value);

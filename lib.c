@@ -184,6 +184,15 @@ void opentac_builder_goto_end(OpentacBuilder *builder) {
     opentac_builder_goto(builder, builder->len);
 }
 
+OpentacStmt *opentac_stmt_ptr(OpentacBuilder *builder) {
+    opentac_assert(builder);
+    opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
+
+    OpentacFnBuilder *fn = &(*builder->current)->fn;
+
+    return fn->current;
+}
+
 OpentacValue opentac_build_binary(OpentacBuilder *builder, int opcode, OpentacValue left, OpentacValue right) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
