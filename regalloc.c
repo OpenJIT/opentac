@@ -257,6 +257,26 @@ static void opentac_alloc_stmt(struct OpentacRegalloc *alloc, OpentacFnBuilder *
     case OPENTAC_OP_BRANCH:
     case OPENTAC_OP_NOP:
         break;
+    case OPENTAC_OP_ALLOCA: {
+        int stack = 0;
+        // t + 8 hexadecimals + \0
+        char *name = malloc(10);
+        snprintf(name, 10, "t%x", stmt->target);
+        // TODO: placeholder typeinfo
+        OpentacTypeInfo ti = { .size = 8, .align = 8 };
+        struct OpentacPurpose purpose = { .tag = OPENTAC_REG_SPILLED, .stack = 0 };
+        OpentacLifetime start = idx;
+        OpentacLifetime end = idx;
+        struct OpentacInterval interval = {
+            .stack = stack,
+            .name = name,
+            .ti = ti,
+            .purpose = purpose,
+            .start = start,
+            .end = end
+        };
+        opentac_alloc_add(alloc, &interval);
+    } break;
     }
 }
 
