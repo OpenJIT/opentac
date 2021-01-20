@@ -230,7 +230,7 @@ stmt:
                     opentac_fn_bind_int(opentac_b, yyregval, target.val.regval);
                     yyvalc = 0;
                   }
-        |       reg SYM_LET KW_ALLOCA INTEGER INTEGER SYM_SEMICOLON {
+        |       reg SYM_LET KW_ALLOCA INTEGER SYM_COMMA INTEGER SYM_SEMICOLON {
                     OpentacValue target = opentac_build_alloca(opentac_b, yyival[0], yyival[1]);
                     opentac_fn_bind_int(opentac_b, yyregval, target.val.regval);
                     yyivalc = 0;
