@@ -3,6 +3,7 @@
 /libopentac.so
 *.yy.c
 *.tab.c
+*.tab.h
 *~
 .#*
 #*#

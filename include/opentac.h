@@ -100,6 +100,7 @@ struct OpentacItem {
 
 enum {
     OPENTAC_OP_NOP = 0x00,
+    OPENTAC_OP_ALLOCA,
     OPENTAC_OP_INDEX_ASSIGN,
     OPENTAC_OP_ASSIGN_INDEX,
     OPENTAC_OP_PARAM,
@@ -360,6 +361,7 @@ void opentac_builder_goto(OpentacBuilder *builder, size_t index);
 void opentac_builder_goto_end(OpentacBuilder *builder);
 
 OpentacStmt *opentac_stmt_ptr(OpentacBuilder *builder);
+OpentacValue opentac_build_alloca(OpentacBuilder *builder, uint64_t size, uint64_t align);
 OpentacValue opentac_build_binary(OpentacBuilder *builder, int opcode, OpentacValue left, OpentacValue right);
 OpentacValue opentac_build_unary(OpentacBuilder *builder, int opcode, OpentacValue value);
 void opentac_build_index_assign(OpentacBuilder *builder, OpentacRegister target, OpentacValue offset, OpentacValue value);

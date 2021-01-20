@@ -8,7 +8,8 @@ void yyerror(char const *);
 OpentacBuilder *opentac_b = NULL;
 OpentacString *yystrval = NULL;
 unsigned int yyopval;
-int64_t yyival = 0;
+int64_t yyival[2];
+size_t yyivalc = 0;
 double yydval = 0.0;
 int yystatus = 0;
 static OpentacString *yydeclname;
@@ -29,6 +30,7 @@ static OpentacType **yytpval;
 %token REAL
 %token STRING
 %token IDENT
+%token KW_ALLOCA
 %token KW_IF
 %token KW_BRANCH
 %token KW_RETURN
@@ -174,7 +176,8 @@ type:
                     yytval = opentac_type_named(opentac_b, OPENTAC_TYPE_UNION, yystrval);
                   }
         |       SYM_SQUAREL type SYM_COMMA INTEGER SYM_SQUARER {
-                    yytval = opentac_type_array(opentac_b, yytval, yyival);
+                    yytval = opentac_type_array(opentac_b, yytval, yyival[0]);
+                    yyivalc = 0;
                   }
         |       typelist0 SYM_SARROW type {
                     yytval = opentac_type_fn(opentac_b, yytplen, yytpval, yytval);
@@ -227,6 +230,12 @@ stmt:
                     opentac_fn_bind_int(opentac_b, yyregval, target.val.regval);
                     yyvalc = 0;
                   }
+        |       reg SYM_LET KW_ALLOCA INTEGER INTEGER SYM_SEMICOLON {
+                    OpentacValue target = opentac_build_alloca(opentac_b, yyival[0], yyival[1]);
+                    opentac_fn_bind_int(opentac_b, yyregval, target.val.regval);
+                    yyivalc = 0;
+                    yyvalc = 0;
+                  }
         |       reg SYM_SQUAREL value SYM_SQUARER SYM_LET value SYM_SEMICOLON {
                     OpentacRegister reg = opentac_fn_get_int(opentac_b, yyregval);
                     opentac_del_string(yyregval);
@@ -275,43 +284,53 @@ value:
                     switch (yytval->tag) {
                     case OPENTAC_TYPE_I8:
                       yyvals[yyvalc].tag = OPENTAC_VAL_I8;
-                      yyvals[yyvalc++].val.i8val = yyival;
+                      yyvals[yyvalc++].val.i8val = yyival[0];
+                      yyivalc = 0;
                       break;
                     case OPENTAC_TYPE_I16:
                       yyvals[yyvalc].tag = OPENTAC_VAL_I16;
-                      yyvals[yyvalc++].val.i16val = yyival;
+                      yyvals[yyvalc++].val.i16val = yyival[0];
+                      yyivalc = 0;
                       break;
                     case OPENTAC_TYPE_I32:
                       yyvals[yyvalc].tag = OPENTAC_VAL_I32;
-                      yyvals[yyvalc++].val.i32val = yyival;
+                      yyvals[yyvalc++].val.i32val = yyival[0];
+                      yyivalc = 0;
                       break;
                     case OPENTAC_TYPE_I64:
                       yyvals[yyvalc].tag = OPENTAC_VAL_I64;
-                      yyvals[yyvalc++].val.i64val = yyival;
+                      yyvals[yyvalc++].val.i64val = yyival[0];
+                      yyivalc = 0;
                       break;
                     case OPENTAC_TYPE_UI8:
                       yyvals[yyvalc].tag = OPENTAC_VAL_UI8;
-                      yyvals[yyvalc++].val.ui8val = yyival;
+                      yyvals[yyvalc++].val.ui8val = yyival[0];
+                      yyivalc = 0;
                       break;
                     case OPENTAC_TYPE_UI16:
                       yyvals[yyvalc].tag = OPENTAC_VAL_UI16;
-                      yyvals[yyvalc++].val.ui16val = yyival;
+                      yyvals[yyvalc++].val.ui16val = yyival[0];
+                      yyivalc = 0;
                       break;
                     case OPENTAC_TYPE_UI32:
                       yyvals[yyvalc].tag = OPENTAC_VAL_UI32;
-                      yyvals[yyvalc++].val.ui32val = yyival;
+                      yyvals[yyvalc++].val.ui32val = yyival[0];
+                      yyivalc = 0;
                       break;
                     case OPENTAC_TYPE_UI64:
                       yyvals[yyvalc].tag = OPENTAC_VAL_UI64;
-                      yyvals[yyvalc++].val.ui64val = yyival;
+                      yyvals[yyvalc++].val.ui64val = yyival[0];
+                      yyivalc = 0;
                       break;
                     case OPENTAC_TYPE_F32:
                       yyvals[yyvalc].tag = OPENTAC_VAL_F32;
-                      yyvals[yyvalc++].val.fval = (float) yyival;
+                      yyvals[yyvalc++].val.fval = (float) yyival[0];
+                      yyivalc = 0;
                       break;
                     case OPENTAC_TYPE_F64:
                       yyvals[yyvalc].tag = OPENTAC_VAL_F64;
-                      yyvals[yyvalc++].val.dval = (double) yyival;
+                      yyvals[yyvalc++].val.dval = (double) yyival[0];
+                      yyivalc = 0;
                       break;
                     default:
                       yyerror("type error: integers can only be declared as integer or floating point types");

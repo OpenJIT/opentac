@@ -3,7 +3,8 @@
 #include "grammar.tab.h"
 
 extern OpentacString *yystrval;
-extern int64_t yyival;
+extern int64_t yyival[2];
+extern size_t yyivalc;
 extern double yydval;
 %}
 
@@ -18,6 +19,7 @@ integer [0-9]+
 real1 [-+]?{integer}\.?([eE][-+]?{integer})?
 real2 [-+]?{integer}\.{integer}([eE][-+]?{integer})?
 real {real1}|{real2}
+kw_alloca "alloca"
 kw_if "if"
 kw_branch "branch"
 kw_return "return"
@@ -83,6 +85,7 @@ kw_copy "copy"
 
 {ws} /* skip */
 
+{kw_alloca} { return KW_ALLOCA; }
 {kw_if} { return KW_IF; }
 {kw_branch} { return KW_BRANCH; }
 {kw_return} { return KW_RETURN; }
@@ -151,7 +154,7 @@ kw_copy "copy"
 }
 
 {integer} {
-  yyival = atoll(yytext);
+  yyival[yyivalc++] = atoll(yytext);
   return INTEGER;
 }
 

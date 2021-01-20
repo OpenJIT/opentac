@@ -201,6 +201,33 @@ OpentacStmt *opentac_stmt_ptr(OpentacBuilder *builder) {
     return fn->current;
 }
 
+OpentacValue opentac_build_alloca(OpentacBuilder *builder, uint64_t size, uint64_t align) {
+    opentac_assert(builder);
+    opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
+    
+    OpentacFnBuilder *fn = &(*builder->current)->fn;
+    if ((size_t) (fn->current - fn->stmts) > fn->cap) {
+        opentac_grow_fn(builder, fn->cap * 2);
+    }
+    
+    OpentacRegister target = fn->reg++;
+
+    fn->current->tag.opcode = OPENTAC_OP_ALLOCA;
+    fn->current->tag.left = OPENTAC_VAL_UI64;
+    fn->current->tag.right = OPENTAC_VAL_UI64;
+    fn->current->left.ui64val = size;
+    fn->current->right.ui64val = align;
+    fn->current->target = target;
+    ++fn->len;
+    ++fn->current;
+
+    OpentacValue result;
+    result.tag = OPENTAC_VAL_REG;
+    result.val.regval = target;
+
+    return result;
+}
+
 OpentacValue opentac_build_binary(OpentacBuilder *builder, int opcode, OpentacValue left, OpentacValue right) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
