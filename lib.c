@@ -192,6 +192,16 @@ void opentac_builder_goto_end(OpentacBuilder *builder) {
     opentac_builder_goto(builder, builder->len);
 }
 
+size_t opentac_stmt_offset(OpentacBuilder *builder, OpentacStmt *stmt) {
+    opentac_assert(builder);
+    opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
+    opentac_assert(stmt);
+
+    OpentacFnBuilder *fn = &(*builder->current)->fn;
+
+    return stmt - fn->current;
+}
+
 OpentacStmt *opentac_stmt_ptr(OpentacBuilder *builder) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
