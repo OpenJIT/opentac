@@ -363,6 +363,7 @@ void opentac_builder_goto_end(OpentacBuilder *builder);
 
 size_t opentac_stmt_offset(OpentacBuilder *builder, OpentacStmt *stmt);
 OpentacStmt *opentac_stmt_ptr(OpentacBuilder *builder);
+OpentacStmt *opentac_stmt_at(OpentacBuilder *builder, size_t offset);
 OpentacValue opentac_build_alloca(OpentacBuilder *builder, uint64_t size, uint64_t align);
 OpentacValue opentac_build_binary(OpentacBuilder *builder, int opcode, OpentacValue left, OpentacValue right);
 OpentacValue opentac_build_unary(OpentacBuilder *builder, int opcode, OpentacValue value);

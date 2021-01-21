@@ -211,6 +211,15 @@ OpentacStmt *opentac_stmt_ptr(OpentacBuilder *builder) {
     return fn->current;
 }
 
+OpentacStmt *opentac_stmt_at(OpentacBuilder *builder, size_t offset) {
+    opentac_assert(builder);
+    opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
+
+    OpentacFnBuilder *fn = &(*builder->current)->fn;
+
+    return fn->current + offset;
+}
+
 OpentacValue opentac_build_alloca(OpentacBuilder *builder, uint64_t size, uint64_t align) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
