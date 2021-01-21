@@ -296,7 +296,7 @@ struct OpentacRegisterTable {
     struct OpentacRegEntry *entries;
 };
 
-typedef uint64_t OpentacLifetime;
+typedef int64_t OpentacLifetime;
 
 struct OpentacInterval {
     int stack;

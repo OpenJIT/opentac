@@ -29,7 +29,7 @@ void opentac_alloc_linscan(struct OpentacRegalloc *alloc, size_t len, const char
     
     alloc->parameters.len = paramc;
     alloc->parameters.cap = 32;
-    alloc->parameters.registers = malloc(sizeof(struct OpentacMReg) * alloc->registers.cap);
+    alloc->parameters.registers = malloc(sizeof(struct OpentacMReg) * alloc->parameters.cap);
 
     for (size_t i = 0; i < len; i++) {
         alloc->parameters.registers[i].name = params[i];
@@ -77,6 +77,7 @@ void opentac_alloc_param(struct OpentacRegalloc *alloc, struct OpentacInterval *
             alloc->stack.intervals = realloc(alloc->stack.intervals, alloc->stack.cap * sizeof(struct OpentacInterval));
         }
 
+        interval->reg = NULL;
         alloc->stack.intervals[alloc->stack.len++] = *interval;
     } else {
         if (alloc->live.len == alloc->live.cap) {
@@ -131,8 +132,8 @@ static void opentac_alloc_fn(struct OpentacRegalloc *alloc, OpentacFnBuilder *fn
         // TODO: placeholder typeinfo
         OpentacTypeInfo ti = { .size = fn->params.params[i]->size, .align = fn->params.params[i]->align };
         struct OpentacPurpose purpose = { .tag = OPENTAC_REG_SPILLED, .stack = 0 };
-        OpentacLifetime start = 0;
-        OpentacLifetime end = 0;
+        OpentacLifetime start = -1;
+        OpentacLifetime end = -1;
         struct OpentacInterval interval = {
             .stack = stack,
             .name = name,
@@ -356,13 +357,13 @@ int opentac_alloc_allocate(struct OpentacRegalloc *alloc) {
         expire_len = 0;
 
         if (i->reg) {
-            size_t j = -1;
+            size_t j;
             for (j = 0; j < alloc->registers.len; j++) {
                 if (strcmp(i->reg, alloc->registers.registers[j].name) == 0) {
                     break;
                 }
             }
-            if (j == (size_t) -1) {
+            if (j == alloc->registers.len) {
                 fprintf(stderr, "error: cannot find a free register with this name: %s\n", i->reg);
                 return 1;
             }
@@ -432,7 +433,7 @@ static void opentac_alloc_sort_live(struct OpentacInterval *intervals, size_t lo
 
 static size_t opentac_alloc_partition_live(struct OpentacInterval *intervals, size_t lo, size_t hi) {
     uint8_t temp[sizeof(struct OpentacInterval)];
-    uint64_t pivot = intervals[hi].start;
+    int64_t pivot = intervals[hi].start;
     size_t i = lo;
     for (size_t j = lo; j < hi; j++) {
         if (intervals[j].start < pivot) {
@@ -457,7 +458,7 @@ static void opentac_alloc_sort_active(struct OpentacInterval *live, struct Opent
 
 static size_t opentac_alloc_partition_active(struct OpentacInterval *live, struct OpentacActive *active, size_t lo, size_t hi) {
     uint8_t temp[sizeof(struct OpentacActive)];
-    uint64_t pivot = live[hi].end;
+    int64_t pivot = live[hi].end;
     size_t i = lo;
     for (size_t j = lo; j < hi; j++) {
         if (live[j].end < pivot) {
