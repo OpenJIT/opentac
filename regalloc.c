@@ -371,7 +371,7 @@ static size_t opentac_alloc_partition_live(struct OpentacInterval *intervals, si
     uint8_t temp[sizeof(struct OpentacInterval)];
     uint64_t pivot = intervals[hi].start;
     size_t i = lo;
-    for (size_t j = 0; j < hi; j++) {
+    for (size_t j = lo; j < hi; j++) {
         if (intervals[j].start < pivot) {
             opentac_alloc_memswap(intervals + i, intervals + j, sizeof(struct OpentacInterval), temp);
             ++i;
@@ -396,7 +396,7 @@ static size_t opentac_alloc_partition_active(struct OpentacInterval *live, struc
     uint8_t temp[sizeof(struct OpentacActive)];
     uint64_t pivot = live[hi].end;
     size_t i = lo;
-    for (size_t j = 0; j < hi; j++) {
+    for (size_t j = lo; j < hi; j++) {
         if (live[j].end < pivot) {
             opentac_alloc_memswap(active + i, active + j, sizeof(struct OpentacActive), temp);
             ++i;
