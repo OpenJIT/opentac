@@ -217,7 +217,7 @@ OpentacStmt *opentac_stmt_at(OpentacBuilder *builder, size_t offset) {
 
     OpentacFnBuilder *fn = &(*builder->current)->fn;
 
-    return fn->current + offset;
+    return fn->stmts + offset;
 }
 
 OpentacValue opentac_build_alloca(OpentacBuilder *builder, uint64_t size, uint64_t align) {
