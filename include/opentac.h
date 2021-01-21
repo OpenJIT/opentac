@@ -305,6 +305,7 @@ struct OpentacInterval {
     struct OpentacPurpose purpose;
     OpentacLifetime start;
     OpentacLifetime end;
+    const char *reg;
 };
 
 struct OpentacPool {
@@ -332,6 +333,7 @@ struct OpentacActives {
 
 struct OpentacRegalloc {
     struct OpentacPool registers;
+    struct OpentacPool parameters;
     struct OpentacIntervals live;
     struct OpentacIntervals stack;
     struct OpentacActives active;
@@ -345,10 +347,11 @@ void opentac_builder_with_cap(OpentacBuilder *builder, size_t cap);
 OpentacBuilder *opentac_builderp();
 OpentacBuilder *opentac_builderp_with_cap(size_t cap);
 
-void opentac_alloc_linscan(struct OpentacRegalloc *alloc, size_t len, const char **registers);
+void opentac_alloc_linscan(struct OpentacRegalloc *alloc, size_t len, const char **regs, size_t paramc, const char **params);
 void opentac_alloc_add(struct OpentacRegalloc *alloc, struct OpentacInterval *interval);
-void opentac_alloc_allocate(struct OpentacRegalloc *alloc);
-void opentac_alloc_find(struct OpentacRegalloc *alloc, OpentacBuilder *builder);
+void opentac_alloc_param(struct OpentacRegalloc *alloc, struct OpentacInterval *interval, uint32_t param);
+int opentac_alloc_allocate(struct OpentacRegalloc *alloc);
+void opentac_alloc_find(struct OpentacRegalloc *alloc, OpentacFnBuilder *fn);
 void opentac_alloc_regtable(struct OpentacRegisterTable *dest, struct OpentacRegalloc *alloc);
 
 void opentac_build_decl(OpentacBuilder *builder, OpentacString *name, OpentacType *type);
