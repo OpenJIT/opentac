@@ -520,7 +520,7 @@ void *opentac_fn_get_ptr(OpentacBuilder *builder, OpentacString *name) {
     return NULL;
 }
 
-#define BASIC_TYPE_FN(t) \
+#define BASIC_TYPE_FN(t, s, a) \
     for (size_t i = 0; i < builder->typeset.len; i++) { \
         OpentacType *type = builder->typeset.types[i]; \
         if (type->tag == t) { \
@@ -534,85 +534,87 @@ void *opentac_fn_get_ptr(OpentacBuilder *builder, OpentacString *name) {
 \
     OpentacType *type = malloc(sizeof(OpentacType)); \
     type->tag = t; \
+    type->size = s; \
+    type->align = a; \
     builder->typeset.types[builder->typeset.len++] = type; \
     return type;
 
 OpentacType *opentac_type_unit(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_UNIT)
+    BASIC_TYPE_FN(OPENTAC_TYPE_UNIT, 0, 1)
 }
 
 OpentacType *opentac_type_never(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_NEVER)
+    BASIC_TYPE_FN(OPENTAC_TYPE_NEVER, 0, 1)
 }
 
 OpentacType *opentac_type_bool(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_BOOL)
+    BASIC_TYPE_FN(OPENTAC_TYPE_BOOL, 1, 1)
 }
 
 OpentacType *opentac_type_i8(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_I8)
+    BASIC_TYPE_FN(OPENTAC_TYPE_I8, 1, 1)
 }
 
 OpentacType *opentac_type_i16(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_I16)
+    BASIC_TYPE_FN(OPENTAC_TYPE_I16, 2, 2)
 }
 
 OpentacType *opentac_type_i32(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_I32)
+    BASIC_TYPE_FN(OPENTAC_TYPE_I32, 4, 4)
 }
 
 OpentacType *opentac_type_i64(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_I64)
+    BASIC_TYPE_FN(OPENTAC_TYPE_I64, 8, 8)
 }
 
 OpentacType *opentac_type_ui8(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_UI8)
+    BASIC_TYPE_FN(OPENTAC_TYPE_UI8, 1, 1)
 }
 
 OpentacType *opentac_type_ui16(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_UI16)
+    BASIC_TYPE_FN(OPENTAC_TYPE_UI16, 2, 2)
 }
 
 OpentacType *opentac_type_ui32(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_UI32)
+    BASIC_TYPE_FN(OPENTAC_TYPE_UI32, 4, 4)
 }
 
 OpentacType *opentac_type_ui64(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_UI64)
+    BASIC_TYPE_FN(OPENTAC_TYPE_UI64, 8, 8)
 }
 
 OpentacType *opentac_type_f32(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_F32)
+    BASIC_TYPE_FN(OPENTAC_TYPE_F32, 4, 4)
 }
 
 OpentacType *opentac_type_f64(OpentacBuilder *builder) {
     opentac_assert(builder);
     
-    BASIC_TYPE_FN(OPENTAC_TYPE_F64)
+    BASIC_TYPE_FN(OPENTAC_TYPE_F64, 8, 8)
 }
 
 OpentacType *opentac_type_named(OpentacBuilder *builder, int tag, OpentacString *name) {
@@ -634,6 +636,8 @@ OpentacType *opentac_type_named(OpentacBuilder *builder, int tag, OpentacString 
 
     OpentacType *type = malloc(sizeof(OpentacType));
     type->tag = tag;
+    /* type->size = 0; */
+    /* type->align = 0; */
     type->struc.name = name;
     type->struc.len = 0;
     type->struc.elems = NULL;
@@ -659,6 +663,8 @@ OpentacType *opentac_type_ptr(OpentacBuilder *builder, OpentacType *pointee) {
 
     OpentacType *type = malloc(sizeof(OpentacType));
     type->tag = OPENTAC_TYPE_PTR;
+    type->size = 8;
+    type->align = 8;
     type->ptr.pointee = pointee;
     builder->typeset.types[builder->typeset.len++] = type;
 
@@ -692,6 +698,8 @@ cont:
 
     OpentacType *type = malloc(sizeof(OpentacType));
     type->tag = OPENTAC_TYPE_FN;
+    type->size = 8;
+    type->align = 8;
     type->fn.result = result;
     type->fn.len = len;
     type->fn.params = params;
@@ -726,6 +734,8 @@ cont:
 
     OpentacType *type = malloc(sizeof(OpentacType));
     type->tag = OPENTAC_TYPE_TUPLE;
+    /* type->size = 0; */
+    /* type->align = 1; */
     type->tuple.len = len;
     type->tuple.elems = elems;
     builder->typeset.types[builder->typeset.len++] = type;
@@ -754,6 +764,8 @@ OpentacType *opentac_type_struct(OpentacBuilder *builder, OpentacString *name, s
 
     OpentacType *type = malloc(sizeof(OpentacType));
     type->tag = OPENTAC_TYPE_STRUCT;
+    /* type->size = 0; */
+    /* type->align = 1; */
     type->struc.name = name;
     type->struc.len = len;
     type->struc.elems = elems;
@@ -783,6 +795,8 @@ OpentacType *opentac_type_union(OpentacBuilder *builder, OpentacString *name, si
 
     OpentacType *type = malloc(sizeof(OpentacType));
     type->tag = OPENTAC_TYPE_UNION;
+    /* type->size = 0; */
+    /* type->align = 1; */
     type->struc.name = name;
     type->struc.len = len;
     type->struc.elems = elems;
@@ -808,6 +822,8 @@ OpentacType *opentac_type_array(OpentacBuilder *builder, OpentacType *elem_type,
 
     OpentacType *type = malloc(sizeof(OpentacType));
     type->tag = OPENTAC_TYPE_ARRAY;
+    type->size = elem_type->size * len;
+    type->align = elem_type->align;
     type->array.elem_type = elem_type;
     type->array.len = len;
     builder->typeset.types[builder->typeset.len++] = type;
