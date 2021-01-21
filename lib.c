@@ -199,7 +199,7 @@ size_t opentac_stmt_offset(OpentacBuilder *builder, OpentacStmt *stmt) {
 
     OpentacFnBuilder *fn = &(*builder->current)->fn;
 
-    return stmt - fn->current;
+    return stmt - fn->stmts;
 }
 
 OpentacStmt *opentac_stmt_ptr(OpentacBuilder *builder) {
