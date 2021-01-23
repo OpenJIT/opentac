@@ -80,7 +80,7 @@ static void opentac_grow_name_table(OpentacFnBuilder *fn, size_t newcap) {
 
 static void opentac_grow_params(OpentacFnBuilder *fn, size_t newcap) {
     opentac_assert(fn);
-    opentac_assert(newcap >= fn->cap);
+    opentac_assert(newcap >= fn->params.cap);
     
     fn->params.cap = newcap;
     fn->params.params = realloc(fn->params.params, fn->params.cap * sizeof(OpentacType *));
