@@ -528,8 +528,8 @@ void *opentac_fn_get_ptr(OpentacBuilder *builder, OpentacString *name) {
 
 #define BASIC_TYPE_FN(t, s, a) \
     for (size_t i = 0; i < builder->typeset.len; i++) { \
-        OpentacType *type = builder->typeset.types[i]; \
-        if (type->tag == t) { \
+        OpentacType **type = &builder->typeset.types[i]; \
+        if ((*type)->tag == t) {                         \
             return type; \
         } \
     } \
@@ -542,95 +542,96 @@ void *opentac_fn_get_ptr(OpentacBuilder *builder, OpentacString *name) {
     type->tag = t; \
     type->size = s; \
     type->align = a; \
-    builder->typeset.types[builder->typeset.len++] = type; \
-    return type;
+    OpentacType **dest = &builder->typeset.types[builder->typeset.len++]; \
+    *dest = type; \
+    return dest;
 
-OpentacType *opentac_type_unit(OpentacBuilder *builder) {
+OpentacType **opentac_typep_unit(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_UNIT, 0, 1)
 }
 
-OpentacType *opentac_type_never(OpentacBuilder *builder) {
+OpentacType **opentac_typep_never(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_NEVER, 0, 1)
 }
 
-OpentacType *opentac_type_bool(OpentacBuilder *builder) {
+OpentacType **opentac_typep_bool(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_BOOL, 1, 1)
 }
 
-OpentacType *opentac_type_i8(OpentacBuilder *builder) {
+OpentacType **opentac_typep_i8(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_I8, 1, 1)
 }
 
-OpentacType *opentac_type_i16(OpentacBuilder *builder) {
+OpentacType **opentac_typep_i16(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_I16, 2, 2)
 }
 
-OpentacType *opentac_type_i32(OpentacBuilder *builder) {
+OpentacType **opentac_typep_i32(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_I32, 4, 4)
 }
 
-OpentacType *opentac_type_i64(OpentacBuilder *builder) {
+OpentacType **opentac_typep_i64(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_I64, 8, 8)
 }
 
-OpentacType *opentac_type_ui8(OpentacBuilder *builder) {
+OpentacType **opentac_typep_ui8(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_UI8, 1, 1)
 }
 
-OpentacType *opentac_type_ui16(OpentacBuilder *builder) {
+OpentacType **opentac_typep_ui16(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_UI16, 2, 2)
 }
 
-OpentacType *opentac_type_ui32(OpentacBuilder *builder) {
+OpentacType **opentac_typep_ui32(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_UI32, 4, 4)
 }
 
-OpentacType *opentac_type_ui64(OpentacBuilder *builder) {
+OpentacType **opentac_typep_ui64(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_UI64, 8, 8)
 }
 
-OpentacType *opentac_type_f32(OpentacBuilder *builder) {
+OpentacType **opentac_typep_f32(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_F32, 4, 4)
 }
 
-OpentacType *opentac_type_f64(OpentacBuilder *builder) {
+OpentacType **opentac_typep_f64(OpentacBuilder *builder) {
     opentac_assert(builder);
     
     BASIC_TYPE_FN(OPENTAC_TYPE_F64, 8, 8)
 }
 
-OpentacType *opentac_type_named(OpentacBuilder *builder, int tag, OpentacString *name) {
+OpentacType **opentac_typep_named(OpentacBuilder *builder, int tag, OpentacString *name) {
     opentac_assert(builder);
     opentac_assert(name);
     opentac_assert(tag == OPENTAC_TYPE_STRUCT || tag == OPENTAC_TYPE_UNION);
     
     for (size_t i = 0; i < builder->typeset.len; i++) {
-        OpentacType *type = builder->typeset.types[i];
-        if (type->tag == tag && strcmp(type->struc.name->data, name->data)) {
+        OpentacType **type = &builder->typeset.types[i];
+        if ((*type)->tag == tag && strcmp((*type)->struc.name->data, name->data) == 0) {
             opentac_del_string(name);
             return type;
         }
@@ -647,18 +648,19 @@ OpentacType *opentac_type_named(OpentacBuilder *builder, int tag, OpentacString 
     type->struc.name = name;
     type->struc.len = 0;
     type->struc.elems = NULL;
-    builder->typeset.types[builder->typeset.len++] = type;
+    OpentacType **dest = &builder->typeset.types[builder->typeset.len++];
+    *dest = type;
 
-    return type;
+    return dest;
 }
 
-OpentacType *opentac_type_ptr(OpentacBuilder *builder, OpentacType *pointee) {
+OpentacType **opentac_typep_ptr(OpentacBuilder *builder, OpentacType *pointee) {
     opentac_assert(builder);
     opentac_assert(pointee);
     
     for (size_t i = 0; i < builder->typeset.len; i++) {
-        OpentacType *type = builder->typeset.types[i];
-        if (type->tag == OPENTAC_TYPE_PTR && type->ptr.pointee == pointee) {
+        OpentacType **type = &builder->typeset.types[i];
+        if ((*type)->tag == OPENTAC_TYPE_PTR && (*type)->ptr.pointee == pointee) {
             return type;
         }
     }
@@ -672,21 +674,22 @@ OpentacType *opentac_type_ptr(OpentacBuilder *builder, OpentacType *pointee) {
     type->size = 8;
     type->align = 8;
     type->ptr.pointee = pointee;
-    builder->typeset.types[builder->typeset.len++] = type;
+    OpentacType **dest = &builder->typeset.types[builder->typeset.len++];
+    *dest = type;
 
-    return type;
+    return dest;
 }
 
-OpentacType *opentac_type_fn(OpentacBuilder *builder, size_t len, OpentacType **params, OpentacType *result) {
+OpentacType **opentac_typep_fn(OpentacBuilder *builder, size_t len, OpentacType **params, OpentacType *result) {
     opentac_assert(builder);
     opentac_assert(params);
     opentac_assert(result);
     
     for (size_t i = 0; i < builder->typeset.len; i++) {
-        OpentacType *type = builder->typeset.types[i];
-        if (type->tag == OPENTAC_TYPE_FN && type->fn.result == result && type->fn.len == len) {
-            for (size_t j = 0; j < type->fn.len; j++) {
-                OpentacType *param = type->fn.params[j];
+        OpentacType **type = &builder->typeset.types[i];
+        if ((*type)->tag == OPENTAC_TYPE_FN && (*type)->fn.result == result && (*type)->fn.len == len) {
+            for (size_t j = 0; j < (*type)->fn.len; j++) {
+                OpentacType *param = (*type)->fn.params[j];
                 if (param != params[j]) {
                     goto cont;
                 }
@@ -709,20 +712,21 @@ cont:
     type->fn.result = result;
     type->fn.len = len;
     type->fn.params = params;
-    builder->typeset.types[builder->typeset.len++] = type;
+    OpentacType **dest = &builder->typeset.types[builder->typeset.len++];
+    *dest = type;
 
-    return type;
+    return dest;
 }
 
-OpentacType *opentac_type_tuple(OpentacBuilder *builder, size_t len, OpentacType **elems) {
+OpentacType **opentac_typep_tuple(OpentacBuilder *builder, size_t len, OpentacType **elems) {
     opentac_assert(builder);
     opentac_assert(elems);
     
     for (size_t i = 0; i < builder->typeset.len; i++) {
-        OpentacType *type = builder->typeset.types[i];
-        if (type->tag == OPENTAC_TYPE_TUPLE && type->tuple.len == len) {
-            for (size_t j = 0; j < type->tuple.len; j++) {
-                OpentacType *elem = type->tuple.elems[j];
+        OpentacType **type = &builder->typeset.types[i];
+        if ((*type)->tag == OPENTAC_TYPE_TUPLE && (*type)->tuple.len == len) {
+            for (size_t j = 0; j < (*type)->tuple.len; j++) {
+                OpentacType *elem = (*type)->tuple.elems[j];
                 if (elem != elems[j]) {
                     goto cont;
                 }
@@ -744,22 +748,23 @@ cont:
     /* type->align = 1; */
     type->tuple.len = len;
     type->tuple.elems = elems;
-    builder->typeset.types[builder->typeset.len++] = type;
+    OpentacType **dest = &builder->typeset.types[builder->typeset.len++];
+    *dest = type;
 
-    return type;
+    return dest;
 }
 
-OpentacType *opentac_type_struct(OpentacBuilder *builder, OpentacString *name, size_t len, OpentacType **elems) {
+OpentacType **opentac_typep_struct(OpentacBuilder *builder, OpentacString *name, size_t len, OpentacType **elems) {
     opentac_assert(builder);
     opentac_assert(name);
     opentac_assert(elems);
     
     for (size_t i = 0; i < builder->typeset.len; i++) {
-        OpentacType *type = builder->typeset.types[i];
-        if (type->tag == OPENTAC_TYPE_STRUCT && strcmp(type->struc.name->data, name->data)) {
+        OpentacType **type = &builder->typeset.types[i];
+        if ((*type)->tag == OPENTAC_TYPE_STRUCT && strcmp((*type)->struc.name->data, name->data)) {
             opentac_del_string(name);
-            type->struc.len = len;
-            type->struc.elems = elems;
+            (*type)->struc.len = len;
+            (*type)->struc.elems = elems;
             return type;
         }
     }
@@ -775,22 +780,23 @@ OpentacType *opentac_type_struct(OpentacBuilder *builder, OpentacString *name, s
     type->struc.name = name;
     type->struc.len = len;
     type->struc.elems = elems;
-    builder->typeset.types[builder->typeset.len++] = type;
+    OpentacType **dest = &builder->typeset.types[builder->typeset.len++];
+    *dest = type;
 
-    return type;
+    return dest;
 }
 
-OpentacType *opentac_type_union(OpentacBuilder *builder, OpentacString *name, size_t len, OpentacType **elems) {
+OpentacType **opentac_typep_union(OpentacBuilder *builder, OpentacString *name, size_t len, OpentacType **elems) {
     opentac_assert(builder);
     opentac_assert(name);
     opentac_assert(elems);
     
     for (size_t i = 0; i < builder->typeset.len; i++) {
-        OpentacType *type = builder->typeset.types[i];
-        if (type->tag == OPENTAC_TYPE_UNION && strcmp(type->struc.name->data, name->data)) {
+        OpentacType **type = &builder->typeset.types[i];
+        if ((*type)->tag == OPENTAC_TYPE_UNION && strcmp((*type)->struc.name->data, name->data)) {
             opentac_del_string(name);
-            type->struc.len = len;
-            type->struc.elems = elems;
+            (*type)->struc.len = len;
+            (*type)->struc.elems = elems;
             return type;
         }
     }
@@ -806,18 +812,19 @@ OpentacType *opentac_type_union(OpentacBuilder *builder, OpentacString *name, si
     type->struc.name = name;
     type->struc.len = len;
     type->struc.elems = elems;
-    builder->typeset.types[builder->typeset.len++] = type;
+    OpentacType **dest = &builder->typeset.types[builder->typeset.len++];
+    *dest = type;
 
-    return type;
+    return dest;
 }
 
-OpentacType *opentac_type_array(OpentacBuilder *builder, OpentacType *elem_type, uint64_t len) {
+OpentacType **opentac_typep_array(OpentacBuilder *builder, OpentacType *elem_type, uint64_t len) {
     opentac_assert(builder);
     opentac_assert(elem_type);
     
     for (size_t i = 0; i < builder->typeset.len; i++) {
-        OpentacType *type = builder->typeset.types[i];
-        if (type->tag == OPENTAC_TYPE_ARRAY && type->array.elem_type == elem_type && type->array.len == len) {
+        OpentacType **type = &builder->typeset.types[i];
+        if ((*type)->tag == OPENTAC_TYPE_ARRAY && (*type)->array.elem_type == elem_type && (*type)->array.len == len) {
             return type;
         }
     }
@@ -832,9 +839,10 @@ OpentacType *opentac_type_array(OpentacBuilder *builder, OpentacType *elem_type,
     type->align = elem_type->align;
     type->array.elem_type = elem_type;
     type->array.len = len;
-    builder->typeset.types[builder->typeset.len++] = type;
+    OpentacType **dest = &builder->typeset.types[builder->typeset.len++];
+    *dest = type;
 
-    return type;
+    return dest;
 }
 
 OpentacString *opentac_string(const char *str) {
