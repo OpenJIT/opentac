@@ -1,3 +1,4 @@
+#include <limits.h>
 #include "include/opentac.h"
 
 static void opentac_alloc_remove(void *dest, size_t size, size_t len, void *intervals, size_t idx);
@@ -10,29 +11,49 @@ static size_t opentac_alloc_partition_active(struct OpentacInterval *live, struc
 
 static void opentac_alloc_memswap(void *a, void *b, size_t size, void *temp);
 
-static void opentac_alloc_fn(struct OpentacRegalloc *alloc, OpentacFnBuilder *fn);
-static void opentac_alloc_stmt(struct OpentacRegalloc *alloc, OpentacFnBuilder *fn, OpentacStmt *stmt, size_t idx);
+static void opentac_alloc_fn(struct OpentacRegalloc *alloc, OpentacBuilder *builder, OpentacFnBuilder *fn);
+static void opentac_alloc_stmt(struct OpentacRegalloc *alloc, OpentacBuilder *builder, OpentacFnBuilder *fn, OpentacStmt *stmt, size_t idx);
+
+static inline int log2i(unsigned int val) {
+    if (val == 0) return INT_MIN;
+    if (val == 1) return 0;
+    int log = 0;
+    while (val >>= 1) log++;
+    return log;
+}
+
+static inline int log2ll(unsigned long long val) {
+    if (val == 0) return INT_MIN;
+    if (val == 1) return 0;
+    int log = 0;
+    while (val >>= 1) log++;
+    return log;
+}
 
 struct OpentacPurposePair {
     size_t index;
     struct OpentacPurpose purpose;
 };
 
-void opentac_alloc_linscan(struct OpentacRegalloc *alloc, size_t len, const char **regs, size_t paramc, const char **params) {
+void opentac_alloc_linscan(struct OpentacRegalloc *alloc, size_t len, struct OpentacGmReg *regs, size_t paramc, struct OpentacGmReg *params) {
     alloc->registers.len = len;
     alloc->registers.cap = 32;
-    alloc->registers.registers = malloc(sizeof(struct OpentacMReg) * alloc->registers.cap);
+    alloc->registers.registers = malloc(sizeof(struct OpentacGmReg) * alloc->registers.cap);
 
     for (size_t i = 0; i < len; i++) {
-        alloc->registers.registers[i].name = regs[i];
+        alloc->registers.registers[i] = regs[i];
     }
+    
+    alloc->dead.len = 0;
+    alloc->dead.cap = 32;
+    alloc->dead.registers = malloc(sizeof(struct OpentacGmReg) * alloc->dead.cap);
     
     alloc->parameters.len = paramc;
     alloc->parameters.cap = 32;
-    alloc->parameters.registers = malloc(sizeof(struct OpentacMReg) * alloc->parameters.cap);
+    alloc->parameters.registers = malloc(sizeof(struct OpentacGmReg) * alloc->parameters.cap);
 
     for (size_t i = 0; i < len; i++) {
-        alloc->parameters.registers[i].name = params[i];
+        alloc->parameters.registers[i] = params[i];
     }
     
     alloc->stack.len = 0;
@@ -86,14 +107,14 @@ void opentac_alloc_param(struct OpentacRegalloc *alloc, struct OpentacInterval *
         }
 
         if (param < alloc->parameters.len) {
-            interval->reg = alloc->parameters.registers[param].name;
+            interval->reg = alloc->parameters.registers[param].regs[log2ll(interval->ti.size)].name;
         }
         alloc->live.intervals[alloc->live.len++] = *interval;
     }
 }
 
-void opentac_alloc_find(struct OpentacRegalloc *alloc, OpentacFnBuilder *fn) {
-    opentac_alloc_fn(alloc, fn);
+void opentac_alloc_find(struct OpentacRegalloc *alloc, OpentacBuilder *builder, OpentacFnBuilder *fn) {
+    opentac_alloc_fn(alloc, builder, fn);
 }
 
 void opentac_alloc_regtable(struct OpentacRegisterTable *dest, struct OpentacRegalloc *alloc) {
@@ -123,15 +144,19 @@ void opentac_alloc_regtable(struct OpentacRegisterTable *dest, struct OpentacReg
     }
 }
 
-static void opentac_alloc_fn(struct OpentacRegalloc *alloc, OpentacFnBuilder *fn) {
+static void opentac_alloc_fn(struct OpentacRegalloc *alloc, OpentacBuilder *builder, OpentacFnBuilder *fn) {
     for (size_t i = 0; i < fn->params.len; i++) {
         int stack = 0;
         // p + 8 hexadecimals + \0
         char *name = malloc(10);
         snprintf(name, 10, "p%x", (uint32_t) i);
-        // TODO: placeholder typeinfo
         OpentacTypeInfo ti = { .size = fn->params.params[i]->size, .align = fn->params.params[i]->align };
-        struct OpentacPurpose purpose = { .tag = OPENTAC_REG_SPILLED, .stack = 0 };
+        struct OpentacPurpose purpose = {
+            .tag = OPENTAC_REG_SPILLED,
+            .stack.offset = 0,
+            .stack.size = log2ll(ti.size),
+            .stack.align = log2ll(ti.align)
+        };
         OpentacLifetime start = -1;
         OpentacLifetime end = -1;
         struct OpentacInterval interval = {
@@ -146,11 +171,11 @@ static void opentac_alloc_fn(struct OpentacRegalloc *alloc, OpentacFnBuilder *fn
     }
     for (size_t i = 0; i < fn->len; i++) {
         OpentacStmt *stmt = fn->stmts + i;
-        opentac_alloc_stmt(alloc, fn, stmt, i);
+        opentac_alloc_stmt(alloc, builder, fn, stmt, i);
     }
 }
 
-static void opentac_alloc_stmt(struct OpentacRegalloc *alloc, OpentacFnBuilder *fn, OpentacStmt *stmt, size_t idx) {
+static void opentac_alloc_stmt(struct OpentacRegalloc *alloc, OpentacBuilder *builder, OpentacFnBuilder *fn, OpentacStmt *stmt, size_t idx) {
     switch (stmt->tag.opcode) {
     case OPENTAC_OP_ASSIGN_INDEX:
     case OPENTAC_OP_LT:
@@ -227,9 +252,21 @@ static void opentac_alloc_stmt(struct OpentacRegalloc *alloc, OpentacFnBuilder *
         // t + 8 hexadecimals + \0
         char *name = malloc(10);
         snprintf(name, 10, "t%x", stmt->target);
-        // TODO: placeholder typeinfo
-        OpentacTypeInfo ti = { .size = 8, .align = 8 };
-        struct OpentacPurpose purpose = { .tag = OPENTAC_REG_SPILLED, .stack = 0 };
+        OpentacTypeInfo ti;
+        if (stmt->tag.opcode == OPENTAC_OP_COPY || stmt->tag.opcode == OPENTAC_OP_INDEX_ASSIGN) {
+            // TODO: placeholder typeinfo
+            ti.size = 8;
+            ti.align = 8;
+        } else {
+            ti.size = builder->typeset.types[stmt->type]->size;
+            ti.align = builder->typeset.types[stmt->type]->align;
+        }
+        struct OpentacPurpose purpose = {
+            .tag = OPENTAC_REG_SPILLED,
+            .stack.offset = 0,
+            .stack.size = log2ll(ti.size),
+            .stack.align = log2ll(ti.align)
+        };
         OpentacLifetime start = idx;
         OpentacLifetime end = idx;
         struct OpentacInterval interval = {
@@ -305,9 +342,15 @@ static void opentac_alloc_stmt(struct OpentacRegalloc *alloc, OpentacFnBuilder *
         // t + 8 hexadecimals + \0
         char *name = malloc(10);
         snprintf(name, 10, "t%x", stmt->target);
-        // TODO: placeholder typeinfo
-        OpentacTypeInfo ti = { .size = 8, .align = 8 };
-        struct OpentacPurpose purpose = { .tag = OPENTAC_REG_SPILLED, .stack = 0 };
+        OpentacTypeInfo ti;
+        ti.size = builder->typeset.types[stmt->type]->size;
+        ti.align = builder->typeset.types[stmt->type]->align;
+        struct OpentacPurpose purpose = {
+            .tag = OPENTAC_REG_SPILLED,
+            .stack.offset = 0,
+            .stack.size = log2ll(ti.size),
+            .stack.align = log2ll(ti.align)
+        };
         OpentacLifetime start = idx;
         OpentacLifetime end = idx;
         struct OpentacInterval interval = {
@@ -350,7 +393,7 @@ int opentac_alloc_allocate(struct OpentacRegalloc *alloc) {
             opentac_alloc_remove(&active, sizeof(struct OpentacActive), alloc->active.len, alloc->active.actives, j);
             if (alloc->registers.len == alloc->registers.cap) {
                 alloc->registers.cap *= 2;
-                alloc->registers.registers = realloc(alloc->registers.registers, sizeof(struct OpentacMReg) * alloc->registers.cap);
+                alloc->registers.registers = realloc(alloc->registers.registers, sizeof(struct OpentacGmReg) * alloc->registers.cap);
             }
             alloc->registers.registers[alloc->registers.len++] = active.reg;
         }
@@ -358,22 +401,31 @@ int opentac_alloc_allocate(struct OpentacRegalloc *alloc) {
 
         if (i->reg) {
             size_t j;
+            size_t k;
             for (j = 0; j < alloc->registers.len; j++) {
-                if (strcmp(i->reg, alloc->registers.registers[j].name) == 0) {
-                    break;
+                for (k = 0; k < OPENTAC_SIZE_COUNT; k++) {
+                    if (strcmp(i->reg, alloc->registers.registers[j].regs[k].name) == 0) {
+                        // yeah, I use labels when they're clear
+                        // no, I don't care about "goto statements considered harmful"
+                        // check out "'goto statements considered harmful' considered harmful"
+                        goto brk;
+                    }
                 }
             }
+brk:
             if (j == alloc->registers.len) {
                 fprintf(stderr, "error: cannot find a free register with this name: %s\n", i->reg);
                 return 1;
             }
-            struct OpentacMReg reg = alloc->registers.registers[j];
+            struct OpentacGmReg reg = alloc->registers.registers[j];
             delta[delta_len].index = idx;
             delta[delta_len].purpose.tag = OPENTAC_REG_ALLOCATED;
-            delta[delta_len++].purpose.reg = reg;
+            delta[delta_len++].purpose.reg = reg.regs[k];
+            // PERF: is this even needed?
             opentac_alloc_sort_active(alloc->live.intervals, alloc->active.actives, 0, alloc->active.len - 1);
 
             --alloc->registers.len;
+            alloc->dead.registers[alloc->dead.len++] = alloc->registers.registers[j];
             memmove(alloc->registers.registers + j, alloc->registers.registers + j + 1, alloc->registers.len - j);
         } else if (!alloc->registers.len) {
             if (alloc->active.len) {
@@ -386,19 +438,20 @@ int opentac_alloc_allocate(struct OpentacRegalloc *alloc) {
                     alloc->offset += 8;
                     delta[delta_len].index = active->index;
                     delta[delta_len].purpose.tag = OPENTAC_REG_SPILLED;
-                    delta[delta_len++].purpose.stack = alloc->offset;
+                    delta[delta_len++].purpose.stack.offset = alloc->offset;
                 } else {
                     alloc->offset += 8;
                     delta[delta_len].index = idx;
                     delta[delta_len].purpose.tag = OPENTAC_REG_SPILLED;
-                    delta[delta_len++].purpose.stack = alloc->offset;
+                    delta[delta_len++].purpose.stack.offset = alloc->offset;
                 }
             }
         } else {
-            struct OpentacMReg reg = alloc->registers.registers[--alloc->registers.len];
+            struct OpentacGmReg reg = alloc->registers.registers[--alloc->registers.len];
+            alloc->dead.registers[alloc->dead.len++] = reg;
             delta[delta_len].index = idx;
             delta[delta_len].purpose.tag = OPENTAC_REG_ALLOCATED;
-            delta[delta_len++].purpose.reg = reg;
+            delta[delta_len++].purpose.reg = reg.regs[log2ll(i->ti.size)];
             opentac_alloc_sort_active(alloc->live.intervals, alloc->active.actives, 0, alloc->active.len - 1);
         }
 

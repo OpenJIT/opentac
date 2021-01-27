@@ -220,7 +220,7 @@ OpentacStmt *opentac_stmt_at(OpentacBuilder *builder, size_t offset) {
     return fn->stmts + offset;
 }
 
-OpentacValue opentac_build_alloca(OpentacBuilder *builder, uint64_t size, uint64_t align) {
+OpentacValue opentac_build_alloca(OpentacBuilder *builder, OpentacType **t, uint64_t size, uint64_t align) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
@@ -234,6 +234,7 @@ OpentacValue opentac_build_alloca(OpentacBuilder *builder, uint64_t size, uint64
     fn->current->tag.opcode = OPENTAC_OP_ALLOCA;
     fn->current->tag.left = OPENTAC_VAL_UI64;
     fn->current->tag.right = OPENTAC_VAL_UI64;
+    fn->current->type = t - builder->typeset.types;
     fn->current->left.ui64val = size;
     fn->current->right.ui64val = align;
     fn->current->target = target;
@@ -247,7 +248,7 @@ OpentacValue opentac_build_alloca(OpentacBuilder *builder, uint64_t size, uint64
     return result;
 }
 
-OpentacValue opentac_build_binary(OpentacBuilder *builder, int opcode, OpentacValue left, OpentacValue right) {
+OpentacValue opentac_build_binary(OpentacBuilder *builder, int op, OpentacType **t, OpentacValue left, OpentacValue right) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
@@ -258,9 +259,10 @@ OpentacValue opentac_build_binary(OpentacBuilder *builder, int opcode, OpentacVa
     
     OpentacRegister target = fn->reg++;
 
-    fn->current->tag.opcode = opcode;
+    fn->current->tag.opcode = op;
     fn->current->tag.left = left.tag;
     fn->current->tag.right = right.tag;
+    fn->current->type = t - builder->typeset.types;
     fn->current->left = left.val;
     fn->current->right = right.val;
     fn->current->target = target;
@@ -274,7 +276,7 @@ OpentacValue opentac_build_binary(OpentacBuilder *builder, int opcode, OpentacVa
     return result;
 }
 
-OpentacValue opentac_build_unary(OpentacBuilder *builder, int opcode, OpentacValue value) {
+OpentacValue opentac_build_unary(OpentacBuilder *builder, int op, OpentacType **t, OpentacValue value) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
@@ -285,8 +287,9 @@ OpentacValue opentac_build_unary(OpentacBuilder *builder, int opcode, OpentacVal
     
     OpentacRegister target = fn->reg++;
 
-    fn->current->tag.opcode = opcode;
+    fn->current->tag.opcode = op;
     fn->current->tag.left = value.tag;
+    fn->current->type = t - builder->typeset.types;
     fn->current->left = value.val;
     fn->current->target = target;
     ++fn->len;
@@ -345,7 +348,7 @@ OpentacValue opentac_build_assign_index(OpentacBuilder *builder, OpentacValue va
     return result;
 }
 
-void opentac_build_param(OpentacBuilder *builder, OpentacValue value) {
+void opentac_build_param(OpentacBuilder *builder, OpentacType **t, OpentacValue value) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
@@ -356,12 +359,13 @@ void opentac_build_param(OpentacBuilder *builder, OpentacValue value) {
     
     fn->current->tag.opcode = OPENTAC_OP_PARAM;
     fn->current->tag.left = value.tag;
+    fn->current->type = t - builder->typeset.types;
     fn->current->left = value.val;
     ++fn->len;
     ++fn->current;
 }
 
-OpentacValue opentac_build_call(OpentacBuilder *builder, OpentacValue func, uint64_t nparams) {
+OpentacValue opentac_build_call(OpentacBuilder *builder, OpentacType **t, OpentacValue func, uint64_t nparams) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
@@ -375,6 +379,7 @@ OpentacValue opentac_build_call(OpentacBuilder *builder, OpentacValue func, uint
     fn->current->tag.opcode = OPENTAC_OP_CALL;
     fn->current->tag.left = func.tag;
     fn->current->tag.right = OPENTAC_VAL_UI64;
+    fn->current->type = t - builder->typeset.types;
     fn->current->left = func.val;
     fn->current->right.ui64val = nparams;
     fn->current->target = target;
@@ -388,7 +393,7 @@ OpentacValue opentac_build_call(OpentacBuilder *builder, OpentacValue func, uint
     return result;
 }
 
-void opentac_build_return(OpentacBuilder *builder, OpentacValue value) {
+void opentac_build_return(OpentacBuilder *builder, OpentacType **t, OpentacValue value) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
@@ -399,6 +404,7 @@ void opentac_build_return(OpentacBuilder *builder, OpentacValue value) {
     
     fn->current->tag.opcode = OPENTAC_OP_RETURN;
     fn->current->tag.left = value.tag;
+    fn->current->type = t - builder->typeset.types;
     fn->current->left = value.val;
     ++fn->len;
     ++fn->current;

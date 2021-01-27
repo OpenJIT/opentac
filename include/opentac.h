@@ -155,7 +155,6 @@ enum {
     OPENTAC_VAL_UI64,
     OPENTAC_VAL_F32,
     OPENTAC_VAL_F64,
-    OPENTAC_VAL_PTR,
 };
 
 // size should be 64 bits
@@ -173,7 +172,6 @@ union OpentacVal {
     uint64_t ui64val;
     float fval;
     double dval;
-    uint8_t *ptrval;
 };
 
 struct OpentacValue {
@@ -181,13 +179,14 @@ struct OpentacValue {
     OpentacVal val;
 };
 
-// size should be 32 + 32 + 64 + 64 bits = 24 bytes
+// size should be 32 + 32 + 64 + 64 + 64 bits = 32 bytes
 struct OpentacStmt {
     OpentacOpcode tag;
     union {
         OpentacRegister target;
         OpentacLabel label;
     };
+    uint64_t type;
     OpentacVal left;
     OpentacVal right;
 };
@@ -272,16 +271,39 @@ enum {
     OPENTAC_REG_SPILLED,
 };
 
+enum {
+    // these have to be `8 << OPENTAC_SIZE_XX = XX`
+    // i.e. log2(bitwidth) - 3
+    OPENTAC_SIZE_8 = 0,
+    OPENTAC_SIZE_16 = 1,
+    OPENTAC_SIZE_32 = 2,
+    OPENTAC_SIZE_64 = 3,
+    OPENTAC_SIZE_COUNT,
+};
+
 // machine register
 struct OpentacMReg {
     const char *name;
+    int size;
+};
+
+// generic machine register
+struct OpentacGmReg {
+    struct OpentacMReg regs[OPENTAC_SIZE_COUNT];
+};
+
+// machine stack-allocated value
+struct OpentacMStack {
+    uint64_t offset;
+    int size;
+    int align;
 };
 
 struct OpentacPurpose {
     int tag;
     union {
         struct OpentacMReg reg;
-        uint64_t stack;
+        struct OpentacMStack stack;
     };
 };
 
@@ -311,7 +333,7 @@ struct OpentacInterval {
 struct OpentacPool {
     size_t len;
     size_t cap;
-    struct OpentacMReg *registers;
+    struct OpentacGmReg *registers;
 };
 
 struct OpentacIntervals {
@@ -322,7 +344,7 @@ struct OpentacIntervals {
 
 struct OpentacActive {
     size_t index;
-    struct OpentacMReg reg;
+    struct OpentacGmReg reg;
 };
 
 struct OpentacActives {
@@ -333,6 +355,7 @@ struct OpentacActives {
 
 struct OpentacRegalloc {
     struct OpentacPool registers;
+    struct OpentacPool dead;
     struct OpentacPool parameters;
     struct OpentacIntervals live;
     struct OpentacIntervals stack;
@@ -347,11 +370,11 @@ void opentac_builder_with_cap(OpentacBuilder *builder, size_t cap);
 OpentacBuilder *opentac_builderp();
 OpentacBuilder *opentac_builderp_with_cap(size_t cap);
 
-void opentac_alloc_linscan(struct OpentacRegalloc *alloc, size_t len, const char **regs, size_t paramc, const char **params);
+void opentac_alloc_linscan(struct OpentacRegalloc *alloc, size_t len, struct OpentacGmReg *regs, size_t paramc, struct OpentacGmReg *params);
 void opentac_alloc_add(struct OpentacRegalloc *alloc, struct OpentacInterval *interval);
 void opentac_alloc_param(struct OpentacRegalloc *alloc, struct OpentacInterval *interval, uint32_t param);
 int opentac_alloc_allocate(struct OpentacRegalloc *alloc);
-void opentac_alloc_find(struct OpentacRegalloc *alloc, OpentacFnBuilder *fn);
+void opentac_alloc_find(struct OpentacRegalloc *alloc, OpentacBuilder *builder, OpentacFnBuilder *fn);
 void opentac_alloc_regtable(struct OpentacRegisterTable *dest, struct OpentacRegalloc *alloc);
 
 void opentac_build_decl(OpentacBuilder *builder, OpentacString *name, OpentacType *type);
@@ -367,14 +390,15 @@ void opentac_builder_goto_end(OpentacBuilder *builder);
 size_t opentac_stmt_offset(OpentacBuilder *builder, OpentacStmt *stmt);
 OpentacStmt *opentac_stmt_ptr(OpentacBuilder *builder);
 OpentacStmt *opentac_stmt_at(OpentacBuilder *builder, size_t offset);
-OpentacValue opentac_build_alloca(OpentacBuilder *builder, uint64_t size, uint64_t align);
-OpentacValue opentac_build_binary(OpentacBuilder *builder, int opcode, OpentacValue left, OpentacValue right);
-OpentacValue opentac_build_unary(OpentacBuilder *builder, int opcode, OpentacValue value);
+
+OpentacValue opentac_build_alloca(OpentacBuilder *builder, OpentacType **t, uint64_t size, uint64_t align);
+OpentacValue opentac_build_binary(OpentacBuilder *builder, int op, OpentacType **t, OpentacValue left, OpentacValue right);
+OpentacValue opentac_build_unary(OpentacBuilder *builder, int op, OpentacType **t, OpentacValue value);
 void opentac_build_index_assign(OpentacBuilder *builder, OpentacRegister target, OpentacValue offset, OpentacValue value);
 OpentacValue opentac_build_assign_index(OpentacBuilder *builder, OpentacValue value, OpentacValue offset);
-void opentac_build_param(OpentacBuilder *builder, OpentacValue value);
-OpentacValue opentac_build_call(OpentacBuilder *builder, OpentacValue func, uint64_t nparams);
-void opentac_build_return(OpentacBuilder *builder, OpentacValue value);
+void opentac_build_param(OpentacBuilder *builder, OpentacType **t, OpentacValue value);
+OpentacValue opentac_build_call(OpentacBuilder *builder, OpentacType **t, OpentacValue func, uint64_t nparams);
+void opentac_build_return(OpentacBuilder *builder, OpentacType **t, OpentacValue value);
 void opentac_build_if_branch(OpentacBuilder *builder, int relop, OpentacValue left, OpentacValue right, OpentacLabel label);
 void opentac_build_branch(OpentacBuilder *builder, OpentacValue value);
 

@@ -18,7 +18,8 @@ static OpentacString *yyregval;
 static OpentacString *yylblval;
 static int yyvalc = 0;
 static OpentacValue yyvals[2];
-static OpentacType *yytval;
+static int yytvalc = 0;
+static OpentacType *yytval[4];
 static size_t yytplen;
 static size_t yytpcap;
 static OpentacType **yytpval;
@@ -108,7 +109,7 @@ item:
 
 declaration:
                 declname SYM_COLON type SYM_SEMICOLON {
-                    opentac_build_decl(opentac_b, yydeclname, yytval);
+                    opentac_build_decl(opentac_b, yydeclname, yytval[--yytvalc]);
                   }
         ;
 
@@ -145,7 +146,7 @@ paramslist_inner:
 
 arg:
                 argname SYM_COLON type {
-                    opentac_build_function_param(opentac_b, yyargname, yytval);
+                    opentac_build_function_param(opentac_b, yyargname, yytval[--yytvalc]);
                   }
         ;
 
@@ -154,33 +155,40 @@ argname:
         ;
 
 type:
-                KW_I8 { yytval = opentac_type_i8(opentac_b); }
-        |       KW_I16 { yytval = opentac_type_i16(opentac_b); }
-        |       KW_I32 { yytval = opentac_type_i32(opentac_b); }
-        |       KW_I64 { yytval = opentac_type_i64(opentac_b); }
-        |       KW_U8 { yytval = opentac_type_ui8(opentac_b); }
-        |       KW_U16 { yytval = opentac_type_ui16(opentac_b); }
-        |       KW_U32 { yytval = opentac_type_ui32(opentac_b); }
-        |       KW_U64 { yytval = opentac_type_ui64(opentac_b); }
-        |       KW_F32 { yytval = opentac_type_f32(opentac_b); }
-        |       KW_F64 { yytval = opentac_type_f64(opentac_b); }
-        |       KW_BOOL { yytval = opentac_type_bool(opentac_b); }
-        |       KW_UNIT { yytval = opentac_type_unit(opentac_b); }
-        |       KW_NEVER { yytval = opentac_type_never(opentac_b); }
-        |       SYM_CARET type { yytval = opentac_type_ptr(opentac_b, yytval); }
-        |       KW_TUPLE typelist1 { yytval = opentac_type_tuple(opentac_b, yytplen, yytpval); }
+                KW_I8 { yytval[yytvalc++] = opentac_type_i8(opentac_b); }
+        |       KW_I16 { yytval[yytvalc++] = opentac_type_i16(opentac_b); }
+        |       KW_I32 { yytval[yytvalc++] = opentac_type_i32(opentac_b); }
+        |       KW_I64 { yytval[yytvalc++] = opentac_type_i64(opentac_b); }
+        |       KW_U8 { yytval[yytvalc++] = opentac_type_ui8(opentac_b); }
+        |       KW_U16 { yytval[yytvalc++] = opentac_type_ui16(opentac_b); }
+        |       KW_U32 { yytval[yytvalc++] = opentac_type_ui32(opentac_b); }
+        |       KW_U64 { yytval[yytvalc++] = opentac_type_ui64(opentac_b); }
+        |       KW_F32 { yytval[yytvalc++] = opentac_type_f32(opentac_b); }
+        |       KW_F64 { yytval[yytvalc++] = opentac_type_f64(opentac_b); }
+        |       KW_BOOL { yytval[yytvalc++] = opentac_type_bool(opentac_b); }
+        |       KW_UNIT { yytval[yytvalc++] = opentac_type_unit(opentac_b); }
+        |       KW_NEVER { yytval[yytvalc++] = opentac_type_never(opentac_b); }
+        |       SYM_CARET type {
+                    OpentacType *t = yytval[--yytvalc];
+                    yytval[yytvalc++] = opentac_type_ptr(opentac_b, t);
+                  }
+        |       KW_TUPLE typelist1 {
+                    yytval[yytvalc++] = opentac_type_tuple(opentac_b, yytplen, yytpval);
+                  }
         |       KW_STRUCT IDENT {
-                    yytval = opentac_type_named(opentac_b, OPENTAC_TYPE_STRUCT, yystrval);
+                    yytval[yytvalc++] = opentac_type_named(opentac_b, OPENTAC_TYPE_STRUCT, yystrval);
                   }
         |       KW_UNION IDENT {
-                    yytval = opentac_type_named(opentac_b, OPENTAC_TYPE_UNION, yystrval);
+                    yytval[yytvalc++] = opentac_type_named(opentac_b, OPENTAC_TYPE_UNION, yystrval);
                   }
         |       SYM_SQUAREL type SYM_COMMA INTEGER SYM_SQUARER {
-                    yytval = opentac_type_array(opentac_b, yytval, yyival[0]);
+                    OpentacType *t = yytval[--yytvalc];
+                    yytval[yytvalc++] = opentac_type_array(opentac_b, t, yyival[0]);
                     yyivalc = 0;
                   }
         |       typelist0 SYM_SARROW type {
-                    yytval = opentac_type_fn(opentac_b, yytplen, yytpval, yytval);
+                    OpentacType *t = yytval[--yytvalc];
+                    yytval[yytvalc++] = opentac_type_fn(opentac_b, yytplen, yytpval, t);
                   }
         ;
 
@@ -203,14 +211,14 @@ typelist_inner:
                     yytpcap = DEFAULT_TYPES_CAP;
                     yytplen = 0;
                     yytpval = malloc(yytpcap * sizeof(OpentacType));
-                    yytpval[yytplen++] = yytval;
+                    yytpval[yytplen++] = yytval[--yytvalc];
                   }
         |       typelist_inner SYM_COMMA type {
                     if (yytplen == yytpcap) {
                       yytpcap *= 2;
                       yytpval = realloc(yytpval, yytpcap * sizeof(OpentacType));
                     }
-                    yytpval[yytplen++] = yytval;
+                    yytpval[yytplen++] = yytval[--yytvalc];
                   }
         ;
 
@@ -220,18 +228,18 @@ stmts:
         ;
 
 stmt:
-                reg SYM_LET binary value SYM_COMMA value SYM_SEMICOLON {
-                    OpentacValue target = opentac_build_binary(opentac_b, yyopval, yyvals[0], yyvals[1]);
+                reg SYM_LET binary type SYM_COMMA value SYM_COMMA value SYM_SEMICOLON {
+                    OpentacValue target = opentac_build_binary(opentac_b, yyopval, &yytval[--yytvalc], yyvals[0], yyvals[1]);
                     opentac_fn_bind_int(opentac_b, yyregval, target.val.regval);
                     yyvalc = 0;
                   }
-        |       reg SYM_LET unary value SYM_SEMICOLON {
-                    OpentacValue target = opentac_build_unary(opentac_b, yyopval, yyvals[0]);
+        |       reg SYM_LET unary type SYM_COMMA value SYM_SEMICOLON {
+                    OpentacValue target = opentac_build_unary(opentac_b, yyopval, &yytval[--yytvalc], yyvals[0]);
                     opentac_fn_bind_int(opentac_b, yyregval, target.val.regval);
                     yyvalc = 0;
                   }
-        |       reg SYM_LET KW_ALLOCA INTEGER SYM_COMMA INTEGER SYM_SEMICOLON {
-                    OpentacValue target = opentac_build_alloca(opentac_b, yyival[0], yyival[1]);
+        |       reg SYM_LET KW_ALLOCA type SYM_COMMA INTEGER SYM_COMMA INTEGER SYM_SEMICOLON {
+                    OpentacValue target = opentac_build_alloca(opentac_b, &yytval[--yytvalc], yyival[0], yyival[1]);
                     opentac_fn_bind_int(opentac_b, yyregval, target.val.regval);
                     yyivalc = 0;
                     yyvalc = 0;
@@ -247,12 +255,12 @@ stmt:
                     opentac_fn_bind_int(opentac_b, yyregval, target.val.regval);
                     yyvalc = 0;
                   }
-        |       KW_PARAM value SYM_SEMICOLON {
-                    opentac_build_param(opentac_b, yyvals[0]);
+        |       KW_PARAM type SYM_COMMA value SYM_SEMICOLON {
+                    opentac_build_param(opentac_b, &yytval[--yytvalc], yyvals[0]);
                     yyvalc = 0;
                   }
-        |       KW_RETURN value SYM_SEMICOLON {
-                    opentac_build_return(opentac_b, yyvals[0]);
+        |       KW_RETURN type SYM_COMMA value SYM_SEMICOLON {
+                    opentac_build_return(opentac_b, &yytval[--yytvalc], yyvals[0]);
                     yyvalc = 0;
                   }
         |       KW_IF binary value SYM_COMMA value KW_BRANCH label SYM_SEMICOLON {
@@ -281,7 +289,7 @@ value:
                     yyvals[yyvalc++].val.name = yystrval;
                   }
         |       INTEGER SYM_COLON type {
-                    switch (yytval->tag) {
+                    switch (yytval[--yytvalc]->tag) {
                     case OPENTAC_TYPE_I8:
                       yyvals[yyvalc].tag = OPENTAC_VAL_I8;
                       yyvals[yyvalc++].val.i8val = yyival[0];
@@ -340,7 +348,7 @@ value:
                     }
                   }
         |       REAL SYM_COLON type {
-                    switch (yytval->tag) {
+                    switch (yytval[--yytvalc]->tag) {
                     case OPENTAC_TYPE_F32:
                       yyvals[yyvalc].tag = OPENTAC_VAL_F32;
                       yyvals[yyvalc++].val.fval = (float) yydval;

@@ -24,18 +24,53 @@ int main(int argc, const char **argv) {
             continue;
         }
         OpentacFnBuilder *fn = &builder->items[i]->fn;
-        const char *params[] = {
-            "rdx",
+        struct OpentacGmReg params[] = {
+            {
+                .regs = {
+                    { .size = OPENTAC_SIZE_8, .name = "dl" },
+                    { .size = OPENTAC_SIZE_16, .name = "dx" },
+                    { .size = OPENTAC_SIZE_32, .name = "edx" },
+                    { .size = OPENTAC_SIZE_64, .name = "rdx" },
+                }
+            },
         };
-        const char *registers[] = {
-            "rax",
-            "rcx",
-            "rdx",
-            "rbx",
+        struct OpentacGmReg registers[] = {
+            {
+                .regs = {
+                    { .size = OPENTAC_SIZE_8, .name = "al" },
+                    { .size = OPENTAC_SIZE_16, .name = "ax" },
+                    { .size = OPENTAC_SIZE_32, .name = "eax" },
+                    { .size = OPENTAC_SIZE_64, .name = "rax" },
+                }
+            },
+            {
+                .regs = {
+                    { .size = OPENTAC_SIZE_8, .name = "cl" },
+                    { .size = OPENTAC_SIZE_16, .name = "cx" },
+                    { .size = OPENTAC_SIZE_32, .name = "ecx" },
+                    { .size = OPENTAC_SIZE_64, .name = "rcx" },
+                }
+            },
+            {
+                .regs = {
+                    { .size = OPENTAC_SIZE_8, .name = "dl" },
+                    { .size = OPENTAC_SIZE_16, .name = "dx" },
+                    { .size = OPENTAC_SIZE_32, .name = "edx" },
+                    { .size = OPENTAC_SIZE_64, .name = "rdx" },
+                }
+            },
+            {
+                .regs = {
+                    { .size = OPENTAC_SIZE_8, .name = "bl" },
+                    { .size = OPENTAC_SIZE_16, .name = "bx" },
+                    { .size = OPENTAC_SIZE_32, .name = "ebx" },
+                    { .size = OPENTAC_SIZE_64, .name = "rbx" },
+                }
+            },
         };
         OpentacRegalloc alloc;
         opentac_alloc_linscan(&alloc, 4, registers, 1, params);
-        opentac_alloc_find(&alloc, fn);
+        opentac_alloc_find(&alloc, builder, fn);
         if (opentac_alloc_allocate(&alloc)) {
             return 1;
         }
@@ -45,7 +80,7 @@ int main(int argc, const char **argv) {
         for (size_t i = 0; i < table.len; i++) {
             printf("%s: ", table.entries[i].key->data);
             if (table.entries[i].purpose.tag == OPENTAC_REG_SPILLED) {
-                printf("[%04lx]", table.entries[i].purpose.stack);
+                printf("[%04lx]", table.entries[i].purpose.stack.offset);
             } else if (table.entries[i].purpose.tag == OPENTAC_REG_ALLOCATED) {
                 printf("%s", table.entries[i].purpose.reg.name);
             }
