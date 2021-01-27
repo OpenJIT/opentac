@@ -526,6 +526,16 @@ void *opentac_fn_get_ptr(OpentacBuilder *builder, OpentacString *name) {
     return NULL;
 }
 
+OpentacType **opentac_type_ptr_of(OpentacBuilder *builder, OpentacType *t) {
+    for (size_t i = 0; i < builder->typeset.len; i++) {
+        OpentacType **type = &builder->typeset.types[i];
+        if (*type == t) {
+            return type;
+        }
+    }
+    return NULL;
+}
+
 #define BASIC_TYPE_FN(t, s, a) \
     for (size_t i = 0; i < builder->typeset.len; i++) { \
         OpentacType **type = &builder->typeset.types[i]; \

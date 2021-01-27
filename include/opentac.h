@@ -410,6 +410,8 @@ void opentac_fn_bind_ptr(OpentacBuilder *builder, OpentacString *name, void *val
 uint32_t opentac_fn_get_int(OpentacBuilder *builder, OpentacString *name);
 void *opentac_fn_get_ptr(OpentacBuilder *builder, OpentacString *name);
 
+OpentacType **opentac_type_ptr_of(OpentacBuilder *builder, OpentacType *type);
+
 OpentacType **opentac_typep_unit(OpentacBuilder *builder);
 OpentacType **opentac_typep_never(OpentacBuilder *builder);
 OpentacType **opentac_typep_bool(OpentacBuilder *builder);
