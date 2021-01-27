@@ -343,8 +343,9 @@ static void opentac_alloc_stmt(struct OpentacRegalloc *alloc, OpentacBuilder *bu
         char *name = malloc(10);
         snprintf(name, 10, "t%x", stmt->target);
         OpentacTypeInfo ti;
-        ti.size = builder->typeset.types[stmt->type]->size;
-        ti.align = builder->typeset.types[stmt->type]->align;
+        // pointer size
+        ti.size = 8;
+        ti.align = 8;
         struct OpentacPurpose purpose = {
             .tag = OPENTAC_REG_SPILLED,
             .stack.offset = 0,
