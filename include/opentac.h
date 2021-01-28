@@ -235,6 +235,7 @@ struct OpentacTypeStruct {
     size_t len;
     size_t cap;
     OpentacType **elems;
+    OpentacString **fields;
 };
 
 struct OpentacTypeArray {
@@ -428,9 +429,9 @@ OpentacType **opentac_typep_f64(OpentacBuilder *builder);
 OpentacType **opentac_typep_named(OpentacBuilder *builder, int tag, OpentacString *name);
 OpentacType **opentac_typep_ptr(OpentacBuilder *builder, OpentacType *pointee);
 OpentacType **opentac_typep_fn(OpentacBuilder *builder, size_t len, OpentacType **params, OpentacType *result);
-OpentacType **opentac_typep_tuple(OpentacBuilder *builder, size_t len, OpentacType **elems);
-OpentacType **opentac_typep_struct(OpentacBuilder *builder, OpentacString *name, size_t len, OpentacType **elems);
-OpentacType **opentac_typep_union(OpentacBuilder *builder, OpentacString *name, size_t len, OpentacType **elems);
+OpentacType **opentac_typep_tuple(OpentacBuilder *builder, uint64_t size, uint64_t align, size_t len, OpentacType **elems);
+OpentacType **opentac_typep_struct(OpentacBuilder *builder, uint64_t size, uint64_t align, OpentacString *name, size_t len, OpentacType **elems, OpentacString **fields);
+OpentacType **opentac_typep_union(OpentacBuilder *builder, uint64_t size, uint64_t align, OpentacString *name, size_t len, OpentacType **elems);
 OpentacType **opentac_typep_array(OpentacBuilder *builder, OpentacType *elem_type, uint64_t len);
 
 OpentacString *opentac_string(const char *str);

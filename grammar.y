@@ -173,7 +173,8 @@ type:
                     yytval[yytvalc++] = opentac_typep_ptr(opentac_b, t);
                   }
         |       KW_TUPLE typelist1 {
-                    yytval[yytvalc++] = opentac_typep_tuple(opentac_b, yytplen, yytpval);
+                    // TODO: size and alignment
+                    yytval[yytvalc++] = opentac_typep_tuple(opentac_b, 0, 1, yytplen, yytpval);
                   }
         |       KW_STRUCT IDENT {
                     yytval[yytvalc++] = opentac_typep_named(opentac_b, OPENTAC_TYPE_STRUCT, yystrval);

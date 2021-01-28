@@ -728,7 +728,7 @@ cont:
     return dest;
 }
 
-OpentacType **opentac_typep_tuple(OpentacBuilder *builder, size_t len, OpentacType **elems) {
+OpentacType **opentac_typep_tuple(OpentacBuilder *builder, uint64_t size, uint64_t align, size_t len, OpentacType **elems) {
     opentac_assert(builder);
     opentac_assert(elems);
     
@@ -754,8 +754,8 @@ cont:
 
     OpentacType *type = malloc(sizeof(OpentacType));
     type->tag = OPENTAC_TYPE_TUPLE;
-    /* type->size = 0; */
-    /* type->align = 1; */
+    type->size = size;
+    type->align = align;
     type->tuple.len = len;
     type->tuple.elems = elems;
     OpentacType **dest = &builder->typeset.types[builder->typeset.len++];
@@ -764,7 +764,7 @@ cont:
     return dest;
 }
 
-OpentacType **opentac_typep_struct(OpentacBuilder *builder, OpentacString *name, size_t len, OpentacType **elems) {
+OpentacType **opentac_typep_struct(OpentacBuilder *builder, uint64_t size, uint64_t align, OpentacString *name, size_t len, OpentacType **elems, OpentacString **fields) {
     opentac_assert(builder);
     opentac_assert(name);
     opentac_assert(elems);
@@ -785,18 +785,19 @@ OpentacType **opentac_typep_struct(OpentacBuilder *builder, OpentacString *name,
 
     OpentacType *type = malloc(sizeof(OpentacType));
     type->tag = OPENTAC_TYPE_STRUCT;
-    /* type->size = 0; */
-    /* type->align = 1; */
+    type->size = size;
+    type->align = align;
     type->struc.name = name;
     type->struc.len = len;
     type->struc.elems = elems;
+    type->struc.fields = fields;
     OpentacType **dest = &builder->typeset.types[builder->typeset.len++];
     *dest = type;
 
     return dest;
 }
 
-OpentacType **opentac_typep_union(OpentacBuilder *builder, OpentacString *name, size_t len, OpentacType **elems) {
+OpentacType **opentac_typep_union(OpentacBuilder *builder, uint64_t size, uint64_t align, OpentacString *name, size_t len, OpentacType **elems) {
     opentac_assert(builder);
     opentac_assert(name);
     opentac_assert(elems);
@@ -817,8 +818,8 @@ OpentacType **opentac_typep_union(OpentacBuilder *builder, OpentacString *name, 
 
     OpentacType *type = malloc(sizeof(OpentacType));
     type->tag = OPENTAC_TYPE_UNION;
-    /* type->size = 0; */
-    /* type->align = 1; */
+    type->size = size;
+    type->align = align;
     type->struc.name = name;
     type->struc.len = len;
     type->struc.elems = elems;
