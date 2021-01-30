@@ -5,6 +5,7 @@ extern FILE *yyin;
 extern OpentacBuilder *opentac_b;
 
 #define DEFAULT_BUILDER_CAP ((size_t) 32)
+#define DEFAULT_DEBUG_CAP ((size_t) 512)
 #define DEFAULT_FN_CAP ((size_t) 32)
 #define DEFAULT_NAME_TABLE_CAP ((size_t) 32)
 #define DEFAULT_PARAMS_CAP ((size_t) 4)
@@ -137,6 +138,10 @@ void opentac_build_function(OpentacBuilder *builder, OpentacString *name) {
     item->fn.params.len = 0;
     item->fn.params.cap = cap;
     item->fn.params.params = malloc(cap * sizeof(OpentacType *));
+    
+    item->fn.debug.len = 0;
+    item->fn.debug.cap = DEFAULT_DEBUG_CAP;
+    item->fn.debug.data = malloc(item->fn.debug.cap);
     
     *builder->current = item;
 }
@@ -524,6 +529,97 @@ void *opentac_fn_get_ptr(OpentacBuilder *builder, OpentacString *name) {
     }
 
     return NULL;
+}
+
+void opentac_debug_next(struct OpentacDebugStmt *stmt, struct OpentacDebugData *data, size_t *idx) {
+    size_t i = *idx;
+    stmt->opcode = ((uint8_t *) data->data)[i++];
+    switch (stmt->opcode) {
+    case OPENTAC_DBG_SET_FILE:
+        memcpy(&stmt->arg0.u32val, ((uint32_t *) ((char *) data->data + i)), sizeof(uint32_t));
+        i += sizeof(uint32_t);
+        break;
+    case OPENTAC_DBG_SET_DIR:
+        memcpy(&stmt->arg0.u32val, ((uint32_t *) ((char *) data->data + i)), sizeof(uint32_t));
+        i += sizeof(uint32_t);
+        break;
+    case OPENTAC_DBG_SET_COL:
+        memcpy(&stmt->arg0.u16val, ((uint16_t *) ((char *) data->data + i)), sizeof(uint16_t));
+        i += sizeof(uint16_t);
+        break;
+    case OPENTAC_DBG_SET_PC:
+        memcpy(&stmt->arg0.u64val, ((uint64_t *) ((char *) data->data + i)), sizeof(uint64_t));
+        i += sizeof(uint64_t);
+        break;
+    case OPENTAC_DBG_SET_LINE:
+        memcpy(&stmt->arg0.u32val, ((uint32_t *) ((char *) data->data + i)), sizeof(uint32_t));
+        i += sizeof(uint32_t);
+        break;
+    case OPENTAC_DBG_INC_PC:
+        memcpy(&stmt->arg0.u16val, ((uint16_t *) ((char *) data->data + i)), sizeof(uint16_t));
+        i += sizeof(uint16_t);
+        break;
+    case OPENTAC_DBG_INC_LINE:
+        memcpy(&stmt->arg0.i16val, ((int16_t *) ((char *) data->data + i)), sizeof(uint16_t));
+        i += sizeof(uint16_t);
+        break;
+    case OPENTAC_DBG_INC:
+        memcpy(&stmt->arg0.u8val, ((uint8_t *) ((char *) data->data + i)), sizeof(uint8_t));
+        i += sizeof(uint8_t);
+        memcpy(&stmt->arg1.i8val, ((int8_t *) ((char *) data->data + i)), sizeof(uint8_t));
+        i += sizeof(uint8_t);
+        break;
+    }
+    *idx = i;
+}
+
+static void opentac_debug_opcode(OpentacBuilder *builder, uint8_t opcode, size_t len, void *args) {
+    if ((*builder->current)->fn.debug.len + 1 + len > (*builder->current)->fn.debug.cap) {
+        (*builder->current)->fn.debug.cap *= 2;
+        (*builder->current)->fn.debug.data = realloc((*builder->current)->fn.debug.data, (*builder->current)->fn.debug.cap);
+    }
+
+    memcpy((char *) (*builder->current)->fn.debug.data + (*builder->current)->fn.debug.len, &opcode, 1);
+    (*builder->current)->fn.debug.len += 1;
+    memcpy((char *) (*builder->current)->fn.debug.data + (*builder->current)->fn.debug.len, args, len);
+    (*builder->current)->fn.debug.len += len;
+}
+
+void opentac_debug_set_file(OpentacBuilder *builder, uint32_t file) {
+    opentac_debug_opcode(builder, OPENTAC_DBG_SET_FILE, sizeof(uint32_t), &file);
+}
+
+void opentac_debug_set_dir(OpentacBuilder *builder, uint32_t dir) {
+    opentac_debug_opcode(builder, OPENTAC_DBG_SET_DIR, sizeof(uint32_t), &dir);
+}
+
+void opentac_debug_set_col(OpentacBuilder *builder, uint16_t col) {
+    opentac_debug_opcode(builder, OPENTAC_DBG_SET_COL, sizeof(uint16_t), &col);
+}
+
+void opentac_debug_set_pc(OpentacBuilder *builder, uint64_t pc) {
+    opentac_debug_opcode(builder, OPENTAC_DBG_SET_PC, sizeof(uint64_t), &pc);
+}
+
+void opentac_debug_set_line(OpentacBuilder *builder, uint32_t line) {
+    opentac_debug_opcode(builder, OPENTAC_DBG_SET_LINE, sizeof(uint32_t), &line);
+}
+
+void opentac_debug_inc_pc(OpentacBuilder *builder, uint16_t inc) {
+    opentac_debug_opcode(builder, OPENTAC_DBG_INC_PC, sizeof(uint16_t), &inc);
+}
+
+void opentac_debug_inc_line(OpentacBuilder *builder, int16_t inc) {
+    opentac_debug_opcode(builder, OPENTAC_DBG_INC_LINE, sizeof(uint16_t), &inc);
+}
+
+void opentac_debug_inc(OpentacBuilder *builder, uint8_t inc1, int8_t inc2) {
+    uint8_t args[2] = { inc1, inc2 };
+    opentac_debug_opcode(builder, OPENTAC_DBG_INC, sizeof(uint8_t [2]), args);
+}
+
+void opentac_debug_end(OpentacBuilder *builder) {
+    opentac_debug_opcode(builder, OPENTAC_DBG_END, 0, NULL);
 }
 
 OpentacType **opentac_type_ptr_of(OpentacBuilder *builder, OpentacType *t) {

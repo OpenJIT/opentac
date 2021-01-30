@@ -39,6 +39,38 @@ struct OpentacTypeset {
     OpentacType **types;
 };
 
+enum {
+    OPENTAC_DBG_SET_FILE, // uint8_t, uint32_t
+    OPENTAC_DBG_SET_DIR, // uint8_t, uint32_t
+    OPENTAC_DBG_SET_COL, // uint8_t, uint16_t
+    OPENTAC_DBG_SET_PC, // uint8_t, uint64_t
+    OPENTAC_DBG_SET_LINE, // uint8_t, uint32_t
+    OPENTAC_DBG_INC_PC, // uint8_t, uint16_t
+    OPENTAC_DBG_INC_LINE, // uint8_t, int16_t
+    OPENTAC_DBG_INC, // uint8_t, uint8_t, int8_t
+    OPENTAC_DBG_END, // uint8_t
+};
+
+struct OpentacDebugStmt {
+    uint8_t opcode;
+    struct {
+        uint8_t u8val;
+        int8_t i8val;
+        uint16_t u16val;
+        int16_t i16val;
+        uint32_t u32val;
+        int32_t i32val;
+        uint64_t u64val;
+        int64_t i64val;
+    } arg0, arg1;
+};
+
+struct OpentacDebugData {
+    size_t len;
+    size_t cap;
+    void *data;
+};
+
 struct OpentacBuilder {
     size_t len;
     size_t cap;
@@ -83,6 +115,7 @@ struct OpentacFnBuilder {
     size_t cap;
     OpentacStmt *stmts;
     OpentacStmt *current;
+    struct OpentacDebugData debug;
 };
 
 enum {
@@ -410,6 +443,18 @@ void opentac_fn_bind_int(OpentacBuilder *builder, OpentacString *name, uint32_t 
 void opentac_fn_bind_ptr(OpentacBuilder *builder, OpentacString *name, void *val);
 uint32_t opentac_fn_get_int(OpentacBuilder *builder, OpentacString *name);
 void *opentac_fn_get_ptr(OpentacBuilder *builder, OpentacString *name);
+
+void opentac_debug_next(struct OpentacDebugStmt *stmt, struct OpentacDebugData *data, size_t *idx);
+void opentac_debug_set_file(OpentacBuilder *builder, uint32_t);
+void opentac_debug_set_file(OpentacBuilder *builder, uint32_t);
+void opentac_debug_set_dir(OpentacBuilder *builder, uint32_t);
+void opentac_debug_set_col(OpentacBuilder *builder, uint16_t);
+void opentac_debug_set_pc(OpentacBuilder *builder, uint64_t);
+void opentac_debug_set_line(OpentacBuilder *builder, uint32_t);
+void opentac_debug_inc_pc(OpentacBuilder *builder, uint16_t);
+void opentac_debug_inc_line(OpentacBuilder *builder, int16_t);
+void opentac_debug_inc(OpentacBuilder *builder, uint8_t, int8_t);
+void opentac_debug_end(OpentacBuilder *builder);
 
 OpentacType **opentac_type_ptr_of(OpentacBuilder *builder, OpentacType *type);
 
