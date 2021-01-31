@@ -453,7 +453,7 @@ void opentac_debug_set_pc(OpentacBuilder *builder, uint64_t);
 void opentac_debug_set_line(OpentacBuilder *builder, uint32_t);
 void opentac_debug_inc_pc(OpentacBuilder *builder, uint16_t);
 void opentac_debug_inc_line(OpentacBuilder *builder, int16_t);
-void opentac_debug_inc(OpentacBuilder *builder, uint8_t, int8_t);
+void opentac_debug_inc(OpentacBuilder *builder, int8_t, uint8_t);
 void opentac_debug_end(OpentacBuilder *builder);
 
 OpentacType **opentac_type_ptr_of(OpentacBuilder *builder, OpentacType *type);

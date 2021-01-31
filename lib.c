@@ -564,10 +564,12 @@ void opentac_debug_next(struct OpentacDebugStmt *stmt, struct OpentacDebugData *
         i += sizeof(uint16_t);
         break;
     case OPENTAC_DBG_INC:
-        memcpy(&stmt->arg0.u8val, ((uint8_t *) ((char *) data->data + i)), sizeof(uint8_t));
+        memcpy(&stmt->arg0.i8val, ((int8_t *) ((char *) data->data + i)), sizeof(uint8_t));
         i += sizeof(uint8_t);
-        memcpy(&stmt->arg1.i8val, ((int8_t *) ((char *) data->data + i)), sizeof(uint8_t));
+        memcpy(&stmt->arg1.u8val, ((uint8_t *) ((char *) data->data + i)), sizeof(uint8_t));
         i += sizeof(uint8_t);
+        break;
+    case OPENTAC_DBG_END:
         break;
     }
     *idx = i;
@@ -613,7 +615,7 @@ void opentac_debug_inc_line(OpentacBuilder *builder, int16_t inc) {
     opentac_debug_opcode(builder, OPENTAC_DBG_INC_LINE, sizeof(uint16_t), &inc);
 }
 
-void opentac_debug_inc(OpentacBuilder *builder, uint8_t inc1, int8_t inc2) {
+void opentac_debug_inc(OpentacBuilder *builder, int8_t inc1, uint8_t inc2) {
     uint8_t args[2] = { inc1, inc2 };
     opentac_debug_opcode(builder, OPENTAC_DBG_INC, sizeof(uint8_t [2]), args);
 }
