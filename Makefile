@@ -6,8 +6,8 @@ BIN:=libopentac.so
 TEST:=run_test
 
 TESTSRC:=test.c
-SRC:=lib.c regalloc.c grammar.tab.c lex.yy.c
-OBJ:=lib.o regalloc.o grammar.tab.o lex.yy.o
+SRC:=lib.c print.c regalloc.c grammar.tab.c lex.yy.c
+OBJ:=lib.o print.o regalloc.o grammar.tab.o lex.yy.o
 INC:=$(INCDIR)/opentac.h grammar.tab.h
 
 CFLAGS:=-g -ggdb -Wall -Wextra -pedantic -std=c11 -Wno-unused-function -D_GNU_SOURCE=1 -fPIC

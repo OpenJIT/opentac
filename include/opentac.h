@@ -494,4 +494,6 @@ OpentacType **opentac_typep_array(OpentacBuilder *builder, OpentacType *elem_typ
 OpentacString *opentac_string(const char *str);
 void opentac_del_string(OpentacString *str);
 
+size_t opentac_fprint(FILE *out, OpentacBuilder *builder);
+
 #endif /* OPENTAC_H */
