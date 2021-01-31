@@ -1,7 +1,8 @@
-f: (i32) -> i32;
-f :: (p0: i32) => {
-  t0 := add i32, p0, 1:i32;
-  return i32, t0;
+f: (out i32, in i32) -> unit;
+f :: (out p0: i32, in p1: i32) => {
+  t0 := add i32, p1, 1:i32;
+  p0[0:u32] := t1;
+  return unit, unit;
 }
 
 main: () -> i32;

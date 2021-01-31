@@ -19,6 +19,8 @@ integer [0-9]+
 real1 [-+]?{integer}\.?([eE][-+]?{integer})?
 real2 [-+]?{integer}\.{integer}([eE][-+]?{integer})?
 real {real1}|{real2}
+kw_in "in"
+kw_out "out"
 kw_alloca "alloca"
 kw_if "if"
 kw_branch "branch"
@@ -85,6 +87,8 @@ kw_copy "copy"
 
 {ws} /* skip */
 
+{kw_in} { return KW_IN; }
+{kw_out} { return KW_OUT; }
 {kw_alloca} { return KW_ALLOCA; }
 {kw_if} { return KW_IF; }
 {kw_branch} { return KW_BRANCH; }

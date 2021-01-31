@@ -1,6 +1,7 @@
 %{
 #include "include/opentac.h"
 #define DEFAULT_TYPES_CAP 8
+#define YYERROR_VERBOSE 1
 
 int yylex(void);
 void yyerror(char const *);
@@ -23,6 +24,9 @@ static OpentacType **yytval[4];
 static size_t yytplen;
 static size_t yytpcap;
 static OpentacType **yytpval;
+static size_t yyrtplen;
+static size_t yyrtpcap;
+static OpentacRefType *yyrtpval;
 %}
 
 %define api.value.type {OpentacBuilder}
@@ -31,6 +35,8 @@ static OpentacType **yytpval;
 %token REAL
 %token STRING
 %token IDENT
+%token KW_IN
+%token KW_OUT
 %token KW_ALLOCA
 %token KW_IF
 %token KW_BRANCH
@@ -146,7 +152,16 @@ paramslist_inner:
 
 arg:
                 argname SYM_COLON type {
-                    opentac_build_function_param(opentac_b, yyargname, *yytval[--yytvalc]);
+                    OpentacRefType param = { .type = *yytval[--yytvalc], .ref = OPENTAC_REF_NONE };
+                    opentac_build_function_param(opentac_b, yyargname, &param);
+                  }
+        |       KW_IN argname SYM_COLON type {
+                    OpentacRefType param = { .type = *yytval[--yytvalc], .ref = OPENTAC_REF_IN };
+                    opentac_build_function_param(opentac_b, yyargname, &param);
+                  }
+        |       KW_OUT argname SYM_COLON type {
+                    OpentacRefType result = { .type = *yytval[--yytvalc], .ref = OPENTAC_REF_OUT };
+                    opentac_build_function_param(opentac_b, yyargname, &result);
                   }
         ;
 
@@ -187,19 +202,19 @@ type:
                     yytval[yytvalc++] = opentac_typep_array(opentac_b, t, yyival[0]);
                     yyivalc = 0;
                   }
-        |       typelist0 SYM_SARROW type {
+        |       reftypelist0 SYM_SARROW type {
                     OpentacType *t = *yytval[--yytvalc];
-                    yytval[yytvalc++] = opentac_typep_fn(opentac_b, yytplen, yytpval, t);
+                    yytval[yytvalc++] = opentac_typep_fn(opentac_b, yyrtplen, yyrtpval, t);
                   }
         ;
 
-typelist0:
+reftypelist0:
                 SYM_PARENL SYM_PARENR {
-                    yytplen = 0;
-                    yytpval = malloc(sizeof(OpentacType *));
+                    yyrtplen = 0;
+                    yyrtpval = malloc(sizeof(OpentacType *));
                   }
-        |       SYM_PARENL typelist_inner SYM_PARENR
-        |       SYM_PARENL typelist_inner SYM_COMMA SYM_PARENR
+        |       SYM_PARENL reftypelist_inner SYM_PARENR
+        |       SYM_PARENL reftypelist_inner SYM_COMMA SYM_PARENR
         ;
 
 typelist1:
@@ -211,15 +226,63 @@ typelist_inner:
                 type {
                     yytpcap = DEFAULT_TYPES_CAP;
                     yytplen = 0;
-                    yytpval = malloc(yytpcap * sizeof(OpentacType));
+                    yytpval = malloc(yytpcap * sizeof(OpentacType *));
                     yytpval[yytplen++] = *yytval[--yytvalc];
                   }
         |       typelist_inner SYM_COMMA type {
                     if (yytplen == yytpcap) {
                       yytpcap *= 2;
-                      yytpval = realloc(yytpval, yytpcap * sizeof(OpentacType));
+                      yytpval = realloc(yytpval, yytpcap * sizeof(OpentacType *));
                     }
                     yytpval[yytplen++] = *yytval[--yytvalc];
+                  }
+        ;
+
+reftypelist_inner:
+                type {
+                    yyrtpcap = DEFAULT_TYPES_CAP;
+                    yyrtplen = 0;
+                    yyrtpval = malloc(yyrtpcap * sizeof(OpentacRefType));
+                    yyrtpval[yyrtplen].type = *yytval[--yytvalc];
+                    yyrtpval[yyrtplen++].ref = OPENTAC_REF_NONE;
+                  }
+        |      KW_IN type {
+                    yyrtpcap = DEFAULT_TYPES_CAP;
+                    yyrtplen = 0;
+                    yyrtpval = malloc(yyrtpcap * sizeof(OpentacRefType));
+                    yyrtpval[yyrtplen].type = *yytval[--yytvalc];
+                    yyrtpval[yyrtplen++].ref = OPENTAC_REF_IN;
+                  }
+        |      KW_OUT type {
+                    yyrtpcap = DEFAULT_TYPES_CAP;
+                    yyrtplen = 0;
+                    yyrtpval = malloc(yyrtpcap * sizeof(OpentacRefType));
+                    yyrtpval[yyrtplen].type = *yytval[--yytvalc];
+                    yyrtpval[yyrtplen++].ref = OPENTAC_REF_OUT;
+                  }
+        |       reftypelist_inner SYM_COMMA type {
+                    if (yyrtplen == yyrtpcap) {
+                      yyrtpcap *= 2;
+                      yyrtpval = realloc(yyrtpval, yyrtpcap * sizeof(OpentacRefType));
+                    }
+                    yyrtpval[yyrtplen].type = *yytval[--yytvalc];
+                    yyrtpval[yyrtplen++].ref = OPENTAC_REF_NONE;
+                  }
+        |       reftypelist_inner SYM_COMMA KW_IN type {
+                    if (yyrtplen == yyrtpcap) {
+                      yyrtpcap *= 2;
+                      yyrtpval = realloc(yyrtpval, yyrtpcap * sizeof(OpentacRefType));
+                    }
+                    yyrtpval[yyrtplen].type = *yytval[--yytvalc];
+                    yyrtpval[yyrtplen++].ref = OPENTAC_REF_IN;
+                  }
+        |       reftypelist_inner SYM_COMMA KW_OUT type {
+                    if (yyrtplen == yyrtpcap) {
+                      yyrtpcap *= 2;
+                      yyrtpval = realloc(yyrtpval, yyrtpcap * sizeof(OpentacRefType));
+                    }
+                    yyrtpval[yyrtplen].type = *yytval[--yytvalc];
+                    yyrtpval[yyrtplen++].ref = OPENTAC_REF_OUT;
                   }
         ;
 
@@ -372,6 +435,9 @@ value:
         |       KW_FALSE {
                     yyvals[yyvalc].tag = OPENTAC_VAL_BOOL;
                     yyvals[yyvalc++].val.bval = 0;
+                  }
+        |       KW_UNIT {
+                    yyvals[yyvalc++].tag = OPENTAC_VAL_UNIT;
                   }
         ;
 

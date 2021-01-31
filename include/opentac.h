@@ -19,6 +19,7 @@
 #define opentac_assert(x) opentac_assertf(x, "%s", opentac_stringify(x))
 
 typedef struct OpentacType OpentacType;
+typedef struct OpentacRefType OpentacRefType;
 typedef struct OpentacBuilder OpentacBuilder;
 typedef struct OpentacItem OpentacItem;
 typedef struct OpentacFnBuilder OpentacFnBuilder;
@@ -32,6 +33,17 @@ typedef struct OpentacTypeInfo OpentacTypeInfo;
 typedef struct OpentacRegalloc OpentacRegalloc;
 typedef int32_t OpentacRegister;
 typedef uint32_t OpentacLabel;
+
+enum {
+    OPENTAC_REF_NONE,
+    OPENTAC_REF_IN,
+    OPENTAC_REF_OUT,
+};
+
+struct OpentacRefType {
+    OpentacType *type;
+    int ref;
+};
 
 struct OpentacTypeset {
     size_t len;
@@ -101,7 +113,7 @@ struct OpentacNameTable {
 struct OpentacParams {
     size_t len;
     size_t cap;
-    OpentacType **params;
+    OpentacRefType *params;
 };
 
 struct OpentacFnBuilder {
@@ -253,7 +265,7 @@ struct OpentacTypePtr {
 struct OpentacTypeFn {
     size_t len;
     size_t cap;
-    OpentacType **params;
+    OpentacRefType *params;
     OpentacType *result;
 };
 
@@ -413,7 +425,7 @@ void opentac_alloc_regtable(struct OpentacRegisterTable *dest, struct OpentacReg
 
 void opentac_build_decl(OpentacBuilder *builder, OpentacString *name, OpentacType *type);
 void opentac_build_function(OpentacBuilder *builder, OpentacString *name);
-void opentac_build_function_param(OpentacBuilder *builder, OpentacString *name, OpentacType *type);
+void opentac_build_function_param(OpentacBuilder *builder, OpentacString *name, OpentacRefType *type);
 void opentac_finish_function(OpentacBuilder *builder);
 OpentacItem *opentac_item_ptr(OpentacBuilder *builder);
 void opentac_set_item(OpentacBuilder *builder, OpentacItem *item);
@@ -473,7 +485,7 @@ OpentacType **opentac_typep_f32(OpentacBuilder *builder);
 OpentacType **opentac_typep_f64(OpentacBuilder *builder);
 OpentacType **opentac_typep_named(OpentacBuilder *builder, int tag, OpentacString *name);
 OpentacType **opentac_typep_ptr(OpentacBuilder *builder, OpentacType *pointee);
-OpentacType **opentac_typep_fn(OpentacBuilder *builder, size_t len, OpentacType **params, OpentacType *result);
+OpentacType **opentac_typep_fn(OpentacBuilder *builder, size_t len, OpentacRefType *params, OpentacType *result);
 OpentacType **opentac_typep_tuple(OpentacBuilder *builder, uint64_t size, uint64_t align, size_t len, OpentacType **elems);
 OpentacType **opentac_typep_struct(OpentacBuilder *builder, uint64_t size, uint64_t align, OpentacString *name, size_t len, OpentacType **elems, OpentacString **fields);
 OpentacType **opentac_typep_union(OpentacBuilder *builder, uint64_t size, uint64_t align, OpentacString *name, size_t len, OpentacType **elems);

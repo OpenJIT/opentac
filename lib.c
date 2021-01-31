@@ -84,7 +84,7 @@ static void opentac_grow_params(OpentacFnBuilder *fn, size_t newcap) {
     opentac_assert(newcap >= fn->params.cap);
     
     fn->params.cap = newcap;
-    fn->params.params = realloc(fn->params.params, fn->params.cap * sizeof(OpentacType *));
+    fn->params.params = realloc(fn->params.params, fn->params.cap * sizeof(OpentacRefType));
 }
 
 static void opentac_grow_typeset(OpentacBuilder *builder, size_t newcap) {
@@ -137,7 +137,7 @@ void opentac_build_function(OpentacBuilder *builder, OpentacString *name) {
     cap = DEFAULT_PARAMS_CAP;
     item->fn.params.len = 0;
     item->fn.params.cap = cap;
-    item->fn.params.params = malloc(cap * sizeof(OpentacType *));
+    item->fn.params.params = malloc(cap * sizeof(OpentacRefType));
     
     item->fn.debug.len = 0;
     item->fn.debug.cap = DEFAULT_DEBUG_CAP;
@@ -162,7 +162,7 @@ void opentac_set_item(OpentacBuilder *builder, OpentacItem *item) {
     *builder->current = item;
 }
 
-void opentac_build_function_param(OpentacBuilder *builder, OpentacString *name, OpentacType *type) {
+void opentac_build_function_param(OpentacBuilder *builder, OpentacString *name, OpentacRefType *type) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
@@ -174,7 +174,7 @@ void opentac_build_function_param(OpentacBuilder *builder, OpentacString *name, 
         opentac_grow_params(fn, fn->params.cap * 2);
     }
     
-    fn->params.params[fn->params.len++] = type;
+    fn->params.params[fn->params.len++] = *type;
 }
 
 void opentac_builder_insert(OpentacBuilder *builder, size_t index) {
@@ -788,17 +788,19 @@ OpentacType **opentac_typep_ptr(OpentacBuilder *builder, OpentacType *pointee) {
     return dest;
 }
 
-OpentacType **opentac_typep_fn(OpentacBuilder *builder, size_t len, OpentacType **params, OpentacType *result) {
+OpentacType **opentac_typep_fn(OpentacBuilder *builder, size_t len, OpentacRefType *params, OpentacType *result) {
     opentac_assert(builder);
     opentac_assert(params);
     opentac_assert(result);
     
     for (size_t i = 0; i < builder->typeset.len; i++) {
         OpentacType **type = &builder->typeset.types[i];
-        if ((*type)->tag == OPENTAC_TYPE_FN && (*type)->fn.result == result && (*type)->fn.len == len) {
+        if ((*type)->tag == OPENTAC_TYPE_FN
+            && (*type)->fn.result == result
+            && (*type)->fn.len == len) {
             for (size_t j = 0; j < (*type)->fn.len; j++) {
-                OpentacType *param = (*type)->fn.params[j];
-                if (param != params[j]) {
+                OpentacRefType *param = &(*type)->fn.params[j];
+                if (param->type != params[j].type && param->ref != params[j].ref) {
                     goto cont;
                 }
             }

@@ -150,7 +150,19 @@ static void opentac_alloc_fn(struct OpentacRegalloc *alloc, OpentacBuilder *buil
         // p + 8 hexadecimals + \0
         char *name = malloc(10);
         snprintf(name, 10, "p%x", (uint32_t) i);
-        OpentacTypeInfo ti = { .size = fn->params.params[i]->size, .align = fn->params.params[i]->align };
+        OpentacTypeInfo ti = { .size = fn->params.params[i].type->size, .align = fn->params.params[i].type->align };
+        switch (fn->params.params[i].ref) {
+        case OPENTAC_REF_NONE:
+            break;
+        case OPENTAC_REF_IN:
+            ti.size = 8;
+            ti.align = 8;
+            break;
+        case OPENTAC_REF_OUT:
+            ti.size = 8;
+            ti.align = 8;
+            break;
+        }
         struct OpentacPurpose purpose = {
             .tag = OPENTAC_REG_SPILLED,
             .stack.offset = 0,
