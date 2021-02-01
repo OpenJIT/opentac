@@ -230,7 +230,7 @@ OpentacValue opentac_build_alloca(OpentacBuilder *builder, OpentacType **t, uint
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
     OpentacFnBuilder *fn = &(*builder->current)->fn;
-    if ((size_t) (fn->current - fn->stmts) > fn->cap) {
+    if (fn->len == fn->cap) {
         opentac_grow_fn(builder, fn->cap * 2);
     }
     
@@ -258,7 +258,7 @@ OpentacValue opentac_build_binary(OpentacBuilder *builder, int op, OpentacType *
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
     OpentacFnBuilder *fn = &(*builder->current)->fn;
-    if ((size_t) (fn->current - fn->stmts) > fn->cap) {
+    if (fn->len == fn->cap) {
         opentac_grow_fn(builder, fn->cap * 2);
     }
     
@@ -286,7 +286,7 @@ OpentacValue opentac_build_unary(OpentacBuilder *builder, int op, OpentacType **
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
     OpentacFnBuilder *fn = &(*builder->current)->fn;
-    if ((size_t) (fn->current - fn->stmts) > fn->cap) {
+    if (fn->len == fn->cap) {
         opentac_grow_fn(builder, fn->cap * 2);
     }
     
@@ -307,18 +307,19 @@ OpentacValue opentac_build_unary(OpentacBuilder *builder, int op, OpentacType **
     return result;
 }
 
-void opentac_build_index_assign(OpentacBuilder *builder, OpentacRegister target, OpentacValue offset, OpentacValue value) {
+void opentac_build_index_assign(OpentacBuilder *builder, OpentacType **t, OpentacRegister target, OpentacValue offset, OpentacValue value) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
     OpentacFnBuilder *fn = &(*builder->current)->fn;
-    if ((size_t) (fn->current - fn->stmts) > fn->cap) {
+    if (fn->len == fn->cap) {
         opentac_grow_fn(builder, fn->cap * 2);
     }
     
     fn->current->tag.opcode = OPENTAC_OP_INDEX_ASSIGN;
     fn->current->tag.left = offset.tag;
     fn->current->tag.right = value.tag;
+    fn->current->type = t - builder->typeset.types;
     fn->current->left = offset.val;
     fn->current->right = value.val;
     fn->current->target = target;
@@ -326,12 +327,12 @@ void opentac_build_index_assign(OpentacBuilder *builder, OpentacRegister target,
     ++fn->current;
 }
 
-OpentacValue opentac_build_assign_index(OpentacBuilder *builder, OpentacValue value, OpentacValue offset) {
+OpentacValue opentac_build_assign_index(OpentacBuilder *builder, OpentacType **t, OpentacValue value, OpentacValue offset) {
     opentac_assert(builder);
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
     OpentacFnBuilder *fn = &(*builder->current)->fn;
-    if ((size_t) (fn->current - fn->stmts) > fn->cap) {
+    if (fn->len == fn->cap) {
         opentac_grow_fn(builder, fn->cap * 2);
     }
     
@@ -340,6 +341,7 @@ OpentacValue opentac_build_assign_index(OpentacBuilder *builder, OpentacValue va
     fn->current->tag.opcode = OPENTAC_OP_ASSIGN_INDEX;
     fn->current->tag.left = value.tag;
     fn->current->tag.right = offset.tag;
+    fn->current->type = t - builder->typeset.types;
     fn->current->left = value.val;
     fn->current->right = offset.val;
     fn->current->target = target;
@@ -358,7 +360,7 @@ void opentac_build_param(OpentacBuilder *builder, OpentacType **t, OpentacValue 
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
     OpentacFnBuilder *fn = &(*builder->current)->fn;
-    if ((size_t) (fn->current - fn->stmts) > fn->cap) {
+    if (fn->len == fn->cap) {
         opentac_grow_fn(builder, fn->cap * 2);
     }
     
@@ -375,7 +377,7 @@ OpentacValue opentac_build_call(OpentacBuilder *builder, OpentacType **t, Openta
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
     OpentacFnBuilder *fn = &(*builder->current)->fn;
-    if ((size_t) (fn->current - fn->stmts) > fn->cap) {
+    if (fn->len == fn->cap) {
         opentac_grow_fn(builder, fn->cap * 2);
     }
     
@@ -403,7 +405,7 @@ void opentac_build_return(OpentacBuilder *builder, OpentacType **t, OpentacValue
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
     OpentacFnBuilder *fn = &(*builder->current)->fn;
-    if ((size_t) (fn->current - fn->stmts) > fn->cap) {
+    if (fn->len == fn->cap) {
         opentac_grow_fn(builder, fn->cap * 2);
     }
     
@@ -421,7 +423,7 @@ void opentac_build_if_branch(OpentacBuilder *builder, int relop, OpentacValue le
     opentac_assert(relop >= OPENTAC_OP_LT && relop <= OPENTAC_OP_GE);
     
     OpentacFnBuilder *fn = &(*builder->current)->fn;
-    if ((size_t) (fn->current - fn->stmts) > fn->cap) {
+    if (fn->len == fn->cap) {
         opentac_grow_fn(builder, fn->cap * 2);
     }
     
@@ -440,7 +442,7 @@ void opentac_build_branch(OpentacBuilder *builder, OpentacValue value) {
     opentac_assert((*builder->current)->tag == OPENTAC_ITEM_FN);
     
     OpentacFnBuilder *fn = &(*builder->current)->fn;
-    if ((size_t) (fn->current - fn->stmts) > fn->cap) {
+    if (fn->len == fn->cap) {
         opentac_grow_fn(builder, fn->cap * 2);
     }
     

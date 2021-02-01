@@ -174,6 +174,7 @@ enum {
     OPENTAC_OP_REF,
     OPENTAC_OP_DEREF,
     OPENTAC_OP_COPY,
+    OPENTAC_OP_MEMCPY = 0x100,
     OPENTAC_OP_BRANCH = 0xff00,
 };
 
@@ -354,7 +355,11 @@ struct OpentacPurpose {
     };
 };
 
+typedef int64_t OpentacLifetime;
+
 struct OpentacRegEntry {
+    OpentacLifetime start;
+    OpentacLifetime end;
     OpentacString *key;
     struct OpentacPurpose purpose;
 };
@@ -364,8 +369,6 @@ struct OpentacRegisterTable {
     size_t cap;
     struct OpentacRegEntry *entries;
 };
-
-typedef int64_t OpentacLifetime;
 
 struct OpentacInterval {
     int stack;
@@ -402,7 +405,6 @@ struct OpentacActives {
 
 struct OpentacRegalloc {
     struct OpentacPool registers;
-    struct OpentacPool dead;
     struct OpentacPool parameters;
     struct OpentacIntervals live;
     struct OpentacIntervals stack;
@@ -441,8 +443,8 @@ OpentacStmt *opentac_stmt_at(OpentacBuilder *builder, size_t offset);
 OpentacValue opentac_build_alloca(OpentacBuilder *builder, OpentacType **t, uint64_t size, uint64_t align);
 OpentacValue opentac_build_binary(OpentacBuilder *builder, int op, OpentacType **t, OpentacValue left, OpentacValue right);
 OpentacValue opentac_build_unary(OpentacBuilder *builder, int op, OpentacType **t, OpentacValue value);
-void opentac_build_index_assign(OpentacBuilder *builder, OpentacRegister target, OpentacValue offset, OpentacValue value);
-OpentacValue opentac_build_assign_index(OpentacBuilder *builder, OpentacValue value, OpentacValue offset);
+void opentac_build_index_assign(OpentacBuilder *builder, OpentacType **t, OpentacRegister target, OpentacValue offset, OpentacValue value);
+OpentacValue opentac_build_assign_index(OpentacBuilder *builder, OpentacType **t, OpentacValue value, OpentacValue offset);
 void opentac_build_param(OpentacBuilder *builder, OpentacType **t, OpentacValue value);
 OpentacValue opentac_build_call(OpentacBuilder *builder, OpentacType **t, OpentacValue func, uint64_t nparams);
 void opentac_build_return(OpentacBuilder *builder, OpentacType **t, OpentacValue value);

@@ -308,14 +308,14 @@ stmt:
                     yyivalc = 0;
                     yyvalc = 0;
                   }
-        |       reg SYM_SQUAREL value SYM_SQUARER SYM_LET value SYM_SEMICOLON {
+        |       reg SYM_SQUAREL value SYM_SQUARER SYM_LET type SYM_COMMA value SYM_SEMICOLON {
                     OpentacRegister reg = opentac_fn_get_int(opentac_b, yyregval);
                     opentac_del_string(yyregval);
-                    opentac_build_index_assign(opentac_b, reg, yyvals[0], yyvals[1]);
+                    opentac_build_index_assign(opentac_b, yytval[--yytvalc], reg, yyvals[0], yyvals[1]);
                     yyvalc = 0;
                   }
-        |       reg SYM_LET value SYM_SQUAREL value SYM_SQUARER SYM_SEMICOLON {
-                    OpentacValue target = opentac_build_assign_index(opentac_b, yyvals[0], yyvals[1]);
+        |       reg SYM_LET type SYM_COMMA value SYM_SQUAREL value SYM_SQUARER SYM_SEMICOLON {
+                    OpentacValue target = opentac_build_assign_index(opentac_b, yytval[--yytvalc], yyvals[0], yyvals[1]);
                     opentac_fn_bind_int(opentac_b, yyregval, target.val.regval);
                     yyvalc = 0;
                   }
