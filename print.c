@@ -360,6 +360,16 @@ static size_t opentac_fprint_stmt(FILE *out, OpentacBuilder *builder, OpentacStm
         len += fprintf(out, " := copy ");
         len += opentac_fprint_value(out, &arg0);
         break;
+    case OPENTAC_OP_MEMCPY:
+        if (stmt->target < 0) {
+            len += fprintf(out, "memcpy p%u[", ~(uint32_t) stmt->target);
+        } else {
+            len += fprintf(out, "t%u[", stmt->target);
+        }
+        len += opentac_fprint_value(out, &arg0);
+        len += fprintf(out, "], ");
+        len += opentac_fprint_value(out, &arg1);
+        break;
     case OPENTAC_OP_BRANCH:
         len += fprintf(out, "branch %lu", stmt->left.ui64val);
         break;

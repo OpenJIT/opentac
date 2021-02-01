@@ -496,5 +496,6 @@ OpentacString *opentac_string(const char *str);
 void opentac_del_string(OpentacString *str);
 
 size_t opentac_fprint(FILE *out, OpentacBuilder *builder);
+int opentac_pass0(OpentacBuilder *builder);
 
 #endif /* OPENTAC_H */
