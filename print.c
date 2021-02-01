@@ -174,7 +174,7 @@ static size_t opentac_fprint_stmt(FILE *out, OpentacBuilder *builder, OpentacStm
         len += fprintf(out, " := ");
         len += fprintf(out, "alloca ");
         len += opentac_fprint_type(out, builder->typeset.types[stmt->type]);
-        len += fprintf(out, ", %lu, %lu", stmt->left.ui64val, stmt->left.ui64val);
+        len += fprintf(out, ", %lu, %lu", stmt->left.ui64val, stmt->right.ui64val);
         break;
     case OPENTAC_OP_INDEX_ASSIGN: 
         if (stmt->target < 0) {
