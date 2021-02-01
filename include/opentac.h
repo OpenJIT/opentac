@@ -313,6 +313,7 @@ struct OpentacTypeInfo {
 };
 
 enum {
+    OPENTAC_REG_UNIT,
     OPENTAC_REG_ALLOCATED,
     OPENTAC_REG_SPILLED,
 };

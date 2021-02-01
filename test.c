@@ -83,6 +83,8 @@ int main(int argc, const char **argv) {
                 printf("[%04lx]", table.entries[i].purpose.stack.offset);
             } else if (table.entries[i].purpose.tag == OPENTAC_REG_ALLOCATED) {
                 printf("%s", table.entries[i].purpose.reg.name);
+            } else if (table.entries[i].purpose.tag == OPENTAC_REG_UNIT) {
+                printf("unit");
             }
             printf("\n");
         }
