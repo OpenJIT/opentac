@@ -331,7 +331,7 @@ enum {
 
 // machine register
 struct OpentacMReg {
-    const char *name;
+    uint32_t number;
     int size;
 };
 
@@ -371,13 +371,15 @@ struct OpentacRegisterTable {
 };
 
 struct OpentacInterval {
-    int stack;
     const char *name;
     OpentacTypeInfo ti;
     struct OpentacPurpose purpose;
     OpentacLifetime start;
     OpentacLifetime end;
-    const char *reg;
+    int stack;
+    int reserved;
+    uint32_t reg;
+    int size;
 };
 
 struct OpentacPool {

@@ -27,44 +27,44 @@ int main(int argc, const char **argv) {
         struct OpentacGmReg params[] = {
             {
                 .regs = {
-                    { .size = OPENTAC_SIZE_8, .name = "dl" },
-                    { .size = OPENTAC_SIZE_16, .name = "dx" },
-                    { .size = OPENTAC_SIZE_32, .name = "edx" },
-                    { .size = OPENTAC_SIZE_64, .name = "rdx" },
+                    { .size = OPENTAC_SIZE_8, .number = 3 },
+                    { .size = OPENTAC_SIZE_16, .number = 3 },
+                    { .size = OPENTAC_SIZE_32, .number = 3 },
+                    { .size = OPENTAC_SIZE_64, .number = 3 },
                 }
             },
         };
         struct OpentacGmReg registers[] = {
             {
                 .regs = {
-                    { .size = OPENTAC_SIZE_8, .name = "al" },
-                    { .size = OPENTAC_SIZE_16, .name = "ax" },
-                    { .size = OPENTAC_SIZE_32, .name = "eax" },
-                    { .size = OPENTAC_SIZE_64, .name = "rax" },
+                    { .size = OPENTAC_SIZE_8, .number = 0 },
+                    { .size = OPENTAC_SIZE_16, .number = 0 },
+                    { .size = OPENTAC_SIZE_32, .number = 0 },
+                    { .size = OPENTAC_SIZE_64, .number = 0 },
                 }
             },
             {
                 .regs = {
-                    { .size = OPENTAC_SIZE_8, .name = "cl" },
-                    { .size = OPENTAC_SIZE_16, .name = "cx" },
-                    { .size = OPENTAC_SIZE_32, .name = "ecx" },
-                    { .size = OPENTAC_SIZE_64, .name = "rcx" },
+                    { .size = OPENTAC_SIZE_8, .number = 2 },
+                    { .size = OPENTAC_SIZE_16, .number = 2 },
+                    { .size = OPENTAC_SIZE_32, .number = 2 },
+                    { .size = OPENTAC_SIZE_64, .number = 2 },
                 }
             },
             {
                 .regs = {
-                    { .size = OPENTAC_SIZE_8, .name = "dl" },
-                    { .size = OPENTAC_SIZE_16, .name = "dx" },
-                    { .size = OPENTAC_SIZE_32, .name = "edx" },
-                    { .size = OPENTAC_SIZE_64, .name = "rdx" },
+                    { .size = OPENTAC_SIZE_8, .number = 3 },
+                    { .size = OPENTAC_SIZE_16, .number = 3 },
+                    { .size = OPENTAC_SIZE_32, .number = 3 },
+                    { .size = OPENTAC_SIZE_64, .number = 3 },
                 }
             },
             {
                 .regs = {
-                    { .size = OPENTAC_SIZE_8, .name = "bl" },
-                    { .size = OPENTAC_SIZE_16, .name = "bx" },
-                    { .size = OPENTAC_SIZE_32, .name = "ebx" },
-                    { .size = OPENTAC_SIZE_64, .name = "rbx" },
+                    { .size = OPENTAC_SIZE_8, .number = 4 },
+                    { .size = OPENTAC_SIZE_16, .number = 4 },
+                    { .size = OPENTAC_SIZE_32, .number = 4 },
+                    { .size = OPENTAC_SIZE_64, .number = 4 },
                 }
             },
         };
@@ -82,7 +82,7 @@ int main(int argc, const char **argv) {
             if (table.entries[i].purpose.tag == OPENTAC_REG_SPILLED) {
                 printf("[%04lx]", table.entries[i].purpose.stack.offset);
             } else if (table.entries[i].purpose.tag == OPENTAC_REG_ALLOCATED) {
-                printf("%s", table.entries[i].purpose.reg.name);
+                printf("r%u", table.entries[i].purpose.reg.number);
             } else if (table.entries[i].purpose.tag == OPENTAC_REG_UNIT) {
                 printf("unit");
             }

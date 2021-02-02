@@ -72,7 +72,7 @@ void opentac_alloc_add(struct OpentacRegalloc *alloc, struct OpentacInterval *in
             alloc->stack.intervals = realloc(alloc->stack.intervals, alloc->stack.cap * sizeof(struct OpentacInterval));
         }
 
-        interval->reg = NULL;
+        interval->reserved = 0;
         alloc->stack.intervals[alloc->stack.len++] = *interval;
     } else {
         if (alloc->live.len == alloc->live.cap) {
@@ -80,7 +80,7 @@ void opentac_alloc_add(struct OpentacRegalloc *alloc, struct OpentacInterval *in
             alloc->live.intervals = realloc(alloc->live.intervals, alloc->live.cap * sizeof(struct OpentacInterval));
         }
 
-        interval->reg = NULL;
+        interval->reserved = 0;
         alloc->live.intervals[alloc->live.len++] = *interval;
     }
 }
@@ -92,7 +92,7 @@ void opentac_alloc_param(struct OpentacRegalloc *alloc, struct OpentacInterval *
             alloc->stack.intervals = realloc(alloc->stack.intervals, alloc->stack.cap * sizeof(struct OpentacInterval));
         }
 
-        interval->reg = NULL;
+        interval->reserved = 0;
         alloc->stack.intervals[alloc->stack.len++] = *interval;
     } else {
         if (alloc->live.len == alloc->live.cap) {
@@ -101,7 +101,9 @@ void opentac_alloc_param(struct OpentacRegalloc *alloc, struct OpentacInterval *
         }
 
         if (param < alloc->parameters.len) {
-            interval->reg = alloc->parameters.registers[param].regs[log2ll(interval->ti.size)].name;
+            interval->reserved = 1;
+            interval->reg = alloc->parameters.registers[param].regs[log2ll(interval->ti.size)].number;
+            interval->size = log2ll(interval->ti.size);
         }
         alloc->live.intervals[alloc->live.len++] = *interval;
     }
@@ -554,12 +556,13 @@ int opentac_alloc_allocate(struct OpentacRegalloc *alloc) {
         }
         expire_len = 0;
 
-        if (i->reg) {
+        if (i->reserved) {
             size_t j;
             size_t k;
             for (j = 0; j < alloc->registers.len; j++) {
                 for (k = 0; k < OPENTAC_SIZE_COUNT; k++) {
-                    if (strcmp(i->reg, alloc->registers.registers[j].regs[k].name) == 0) {
+                    if (i->reg == alloc->registers.registers[j].regs[k].number
+                        && i->size == (int) k) {
                         // yeah, I use labels when they're clear
                         // no, I don't care about "goto statements considered harmful"
                         // check out "'goto statements considered harmful' considered harmful"
@@ -569,7 +572,7 @@ int opentac_alloc_allocate(struct OpentacRegalloc *alloc) {
             }
 brk:
             if (j == alloc->registers.len) {
-                fprintf(stderr, "error: cannot find a free register with this name: %s\n", i->reg);
+                fprintf(stderr, "error: cannot find a free register with this name: %u\n", i->reg);
                 return 1;
             }
             struct OpentacGmReg reg = alloc->registers.registers[j];
@@ -603,8 +606,7 @@ brk:
                 alloc->active.actives[alloc->active.len++].reg = reg;
             } else {
                 delta[delta_len].index = idx;
-                delta[delta_len].purpose.tag = OPENTAC_REG_UNIT;
-                delta[delta_len++].purpose.reg.name = NULL;
+                delta[delta_len++].purpose.tag = OPENTAC_REG_UNIT;
             }
         }
 
