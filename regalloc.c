@@ -206,7 +206,6 @@ static void opentac_alloc_stmt(struct OpentacRegalloc *alloc, OpentacBuilder *bu
     case OPENTAC_OP_MUL:
     case OPENTAC_OP_DIV:
     case OPENTAC_OP_MOD:
-    case OPENTAC_OP_CALL:
         if (stmt->tag.right == OPENTAC_VAL_NAMED) {
             for (size_t i = 0; i < alloc->live.len; i++) {
                 if (strcmp(alloc->live.intervals[i].name, stmt->right.name->data) == 0) {
@@ -424,6 +423,88 @@ static void opentac_alloc_stmt(struct OpentacRegalloc *alloc, OpentacBuilder *bu
             for (size_t i = 0; i < alloc->live.len; i++) {
                 if (strcmp(alloc->live.intervals[i].name, name) == 0) {
                     alloc->live.intervals[i].end = idx;
+                }
+            }
+        }
+    } break;
+    case OPENTAC_OP_CALL: {
+        if (stmt->tag.left == OPENTAC_VAL_NAMED) {
+            for (size_t i = 0; i < alloc->live.len; i++) {
+                if (strcmp(alloc->live.intervals[i].name, stmt->left.name->data) == 0) {
+                    alloc->live.intervals[i].end = idx;
+                }
+            }
+        } else if (stmt->tag.left == OPENTAC_VAL_REG) {
+            const char *name = NULL;
+            for (size_t i = 0; i < fn->name_table.len; i++) {
+                if ((int32_t) fn->name_table.entries[i].ival == stmt->left.regval) {
+                    name = fn->name_table.entries[i].key->data;
+                    break;
+                }
+            }
+            if (name) {
+                for (size_t i = 0; i < alloc->live.len; i++) {
+                    if (strcmp(alloc->live.intervals[i].name, name) == 0) {
+                        alloc->live.intervals[i].end = idx;
+                    }
+                }
+            }
+        }
+
+        int stack = 0;
+        // t + 8 hexadecimals + \0
+        char *name = malloc(10);
+        snprintf(name, 10, "t%x", stmt->target);
+        OpentacTypeInfo ti;
+        ti.size = builder->typeset.types[stmt->type]->size;
+        ti.align = builder->typeset.types[stmt->type]->align;
+        struct OpentacPurpose purpose = {
+            .tag = OPENTAC_REG_SPILLED,
+            .stack.offset = 0,
+            .stack.size = log2ll(ti.size),
+            .stack.align = log2ll(ti.align)
+        };
+        OpentacLifetime start = idx;
+        OpentacLifetime end = idx;
+        struct OpentacInterval interval = {
+            .stack = stack,
+            .name = name,
+            .ti = ti,
+            .purpose = purpose,
+            .start = start,
+            .end = end
+        };
+        opentac_alloc_add(alloc, &interval);
+        
+        // `call`s extend the lifetimes of n params, where the params may occur up to n + 1 addresses before this address
+        uint64_t n = stmt->right.ui64val;
+        if (n) {
+            uint64_t n1 = n + 1;
+            for (size_t i = idx; i > idx - n1; i--) {
+                OpentacStmt *stmt = &fn->stmts[i - 1];
+                if (stmt->tag.opcode == OPENTAC_OP_PARAM) {
+                    if (stmt->tag.left == OPENTAC_VAL_NAMED) {
+                        for (size_t i = 0; i < alloc->live.len; i++) {
+                            if (strcmp(alloc->live.intervals[i].name, stmt->left.name->data) == 0) {
+                                alloc->live.intervals[i].end = idx;
+                            }
+                        }
+                    } else if (stmt->tag.left == OPENTAC_VAL_REG) {
+                        const char *name = NULL;
+                        for (size_t i = 0; i < fn->name_table.len; i++) {
+                            if ((int32_t) fn->name_table.entries[i].ival == stmt->left.regval) {
+                                name = fn->name_table.entries[i].key->data;
+                                break;
+                            }
+                        }
+                        if (name) {
+                            for (size_t i = 0; i < alloc->live.len; i++) {
+                                if (strcmp(alloc->live.intervals[i].name, name) == 0) {
+                                    alloc->live.intervals[i].end = idx;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
